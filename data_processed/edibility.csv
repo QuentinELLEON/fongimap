@@ -1,0 +1,230 @@
+taxon,code,note
+# Curated INDICATIVE edibility table (no open machine-readable source exists). Codes: 1 comestible, 2 comestible après cuisson / précautions, 3 non comestible (ou sans intérêt), 4 toxique, 5 mortel. Absent = inconnu.
+# Rule of thumb used: when in doubt the entry errs towards "not edible"; genus defaults ("Genus *") only ever point to non-edible / toxic.
+# Written from general mycological knowledge, NOT from a validated reference: must be reviewed by a mycologist before any real-world use.
+Amanita phalloides,5,Amanite phalloïde : responsable de la majorité des intoxications mortelles.
+Galerina marginata,5,Galère marginée : amatoxines mortelles ; confusion avec des espèces comestibles de bois.
+Amanita muscaria,4,Amanite tue-mouches : toxique (syndrome panthérinien).
+Amanita pantherina,4,Amanite panthère : toxique.
+Amanita citrina,4,Amanite citrine : non comestible ; confusion possible avec l'amanite phalloïde.
+Amanita porphyria,4,Toxique.
+Amanita junquillea,4,Toxique.
+Amanita rubescens,2,Amanite rougissante : comestible uniquement bien cuite ; confusion grave possible avec l'amanite panthère.
+Amanita vaginata,2,Grisette : comestible cuite ; confusion possible avec des amanites mortelles.
+Amanita fulva,2,Amanite fauve : comestible cuite ; confusion possible avec des amanites toxiques.
+Amanita spissa,3,Amanite épaisse : non recommandée, ressemble à l'amanite panthère.
+Amanita excelsa,3,Non recommandée.
+Paxillus involutus,4,Paxille enroulé : toxique (réaction immuno-allergique parfois mortelle).
+Hypholoma fasciculare,4,Hypholome en touffes : toxique.
+Hypholoma capnoides,1,Hypholome des conifères : comestible ; confusion possible avec l'hypholome en touffes.
+Coprinopsis atramentaria,4,Coprin noir d'encre : toxique en présence d'alcool.
+Ampulloclitocybe clavipes,4,Toxique en présence d'alcool.
+Clitocybe dealbata,4,Clitocybe blanchi : muscarine.
+Clitocybe phyllophila,4,Muscarine.
+Clitocybe nebularis,2,Clitocybe nébuleux : comestible cuit mais mal toléré par certains.
+Scleroderma citrinum,4,Scléroderme commun : toxique.
+Scleroderma verrucosum,4,Toxique.
+Scleroderma areolatum,4,Toxique.
+Gymnopilus junonius,4,Pholiote spectaculaire : amer / toxique.
+Gymnopilus penetrans,3,Amer.
+Hebeloma crustuliniforme,4,Toxique.
+Hebeloma sinapizans,4,Toxique.
+Entoloma lividum,4,Entolome livide : très toxique (syndrome gastro-intestinal sévère).
+Entoloma rhodopolium,4,Toxique.
+Entoloma nidorosum,4,Toxique.
+Tricholoma sulphureum,4,Tricholome soufré : toxique.
+Tricholoma saponaceum,4,Tricholome savonneux : toxique.
+Tricholoma album,4,Toxique.
+Tricholoma ustale,4,Tricholome brûlé : toxique.
+Tricholoma fulvum,3,Amer.
+Tricholoma columbetta,1,Tricholome colombette : comestible.
+Mycena pura,4,Mycène pur : contient de la muscarine.
+Mycena rosea,4,Mycène rosé : muscarine.
+Inocybe geophylla,4,Muscarine.
+Inocybe asterospora,4,Muscarine.
+Inocybe corydalina,4,Muscarine.
+Inosperma maculatum,4,Muscarine.
+Inosperma cookei,4,Muscarine.
+Inosperma bongardii,4,Muscarine.
+Pseudosperma rimosum,4,Muscarine.
+Lepiota cristata,4,Lépiote crêtée : toxique (petites lépiotes à risque mortel).
+Lepiota clypeolaria,4,Toxique.
+Lepiota ventriosospora,4,Toxique.
+Echinoderma asperum,4,Lépiote âpre : toxique.
+Agaricus xanthodermus,4,Agaric jaunissant : toxique (troubles digestifs).
+Hapalopilus rutilans,4,Toxique.
+Ramaria stricta,4,Clavaire droite : toxique.
+Russula emetica,4,Russule émétique : toxique.
+Russula sardonia,4,Toxique (âcre).
+Russula foetens,4,Russule fétide : âcre, toxique cru.
+Russula fragilis,4,Âcre.
+Russula cyanoxantha,1,Russule charbonnière : comestible.
+Russula vesca,1,Russule comestible.
+Russula virescens,1,Russule verdoyante : comestible.
+Russula integra,1,Comestible.
+Russula aurea,1,Comestible.
+Russula heterophylla,1,Comestible.
+Russula olivacea,1,Comestible.
+Russula xerampelina,1,Comestible (odeur de crevette).
+Russula lepida,1,Comestible médiocre.
+Russula delica,1,Comestible médiocre.
+Russula ochroleuca,3,Sans intérêt, âcre.
+Russula fellea,3,Amère.
+Russula nigricans,3,Sans intérêt.
+Russula densifolia,3,Sans intérêt.
+Lactarius deliciosus,1,Lactaire délicieux : comestible.
+Lactarius deterrimus,1,Comestible.
+Lactarius salmonicolor,1,Comestible.
+Lactifluus volemus,1,Lactaire à lait abondant : comestible.
+Lactifluus piperatus,2,Lactaire poivré : comestible après cuisson, très piquant.
+Lactifluus vellereus,3,Âcre, toxique cru.
+Lactarius torminosus,4,Lactaire à toison : toxique cru.
+Lactarius turpis,4,Toxique.
+Lactarius chrysorrheus,4,Toxique.
+Lactarius pyrogalus,3,Âcre.
+Lactarius blennius,3,Âcre.
+Lactarius quietus,3,Sans intérêt.
+Lactarius camphoratus,3,Sans intérêt.
+Lactarius subdulcis,3,Sans intérêt.
+Lactarius rufus,3,Âcre.
+Boletus edulis,1,Cèpe de Bordeaux : excellent comestible.
+Boletus aestivalis,1,Cèpe d'été : comestible.
+Boletus aereus,1,Cèpe bronzé : excellent comestible.
+Imleria badia,1,Bolet bai : comestible.
+Xerocomellus chrysenteron,1,Bolet à chair jaune : comestible médiocre.
+Xerocomus subtomentosus,1,Bolet subtomenteux : comestible médiocre.
+Gyroporus castaneus,1,Bolet châtain : comestible.
+Leccinum aurantiacum,2,Bolet orangé : comestible après cuisson.
+Leccinum scabrum,2,Bolet rude : comestible après cuisson.
+Leccinellum pseudoscabrum,2,Comestible après cuisson.
+Leccinellum crocipodium,2,Comestible après cuisson.
+Neoboletus erythropus,2,Bolet à pied rouge : toxique cru, comestible bien cuit.
+Suillellus luridus,2,Bolet blafard : toxique cru ou avec alcool ; comestible bien cuit.
+Suillellus queletii,2,Toxique cru ; comestible bien cuit.
+Caloboletus calopus,3,Bolet à beau pied : amer.
+Caloboletus radicans,3,Amer.
+Tylopilus felleus,3,Bolet amer.
+Chalciporus piperatus,3,Poivré.
+Suillus luteus,1,Nonnette voilée : comestible (retirer la cuticule).
+Suillus granulatus,1,Comestible.
+Suillus bovinus,1,Comestible médiocre.
+Suillus grevillei,1,Comestible.
+Gomphidius glutinosus,1,Comestible médiocre.
+Chroogomphus rutilus,1,Comestible médiocre.
+Cantharellus cibarius,1,Girolle : excellent comestible.
+Cantharellus pallens,1,Comestible.
+Cantharellus amethysteus,1,Comestible.
+Craterellus tubaeformis,1,Chanterelle en tube : comestible.
+Craterellus cornucopioides,1,Trompette de la mort : excellent comestible.
+Hydnum repandum,1,Pied-de-mouton : comestible.
+Hydnum rufescens,1,Comestible.
+Hygrophoropsis aurantiaca,3,Fausse girolle : sans intérêt, parfois indigeste.
+Marasmius oreades,1,Faux mousseron : comestible.
+Macrolepiota procera,1,Coulemelle : comestible (confusions possibles avec des lépiotes toxiques).
+Macrolepiota mastoidea,1,Comestible.
+Chlorophyllum rhacodes,2,Lépiote déguenillée : comestible cuite, mal tolérée par certains.
+Coprinus comatus,1,Coprin chevelu : comestible jeune.
+Coprinellus micaceus,1,Coprin micacé : comestible jeune.
+Agaricus campestris,1,Rosé des prés : comestible.
+Agaricus sylvaticus,1,Agaric des bois : comestible.
+Agaricus silvicola,1,Agaric des sylves : comestible.
+Armillaria mellea,2,Armillaire couleur de miel : comestible uniquement bien cuit.
+Armillaria gallica,2,Comestible bien cuit.
+Armillaria ostoyae,2,Comestible bien cuit.
+Armillaria cepistipes,2,Comestible bien cuit.
+Flammulina velutipes,1,Collybie à pied velouté : comestible.
+Kuehneromyces mutabilis,1,Pholiote changeante : comestible (confusion mortelle possible avec la galère marginée).
+Pleurotus ostreatus,1,Pleurote en huître : comestible.
+Cyclocybe cylindracea,1,Pholiote du peuplier : comestible.
+Sparassis crispa,1,Morille de pin : comestible.
+Laetiporus sulphureus,2,Polypore soufré : comestible jeune et bien cuit.
+Fistulina hepatica,1,Langue de bœuf : comestible.
+Polyporus squamosus,2,Polypore écailleux : comestible jeune.
+Calocybe gambosa,1,Mousseron de la Saint-Georges : comestible.
+Lyophyllum decastes,1,Comestible.
+Rozites caperatus,1,Pholiote ridée : comestible.
+Lepista nuda,2,Pied bleu : comestible cuit.
+Lepista sordida,1,Comestible.
+Infundibulicybe gibba,1,Clitocybe en entonnoir : comestible.
+Clitopilus prunulus,1,Meunier : comestible (confusions mortelles possibles avec des clitocybes blancs).
+Calvatia excipuliformis,1,Comestible jeune.
+Lycoperdon perlatum,1,Vesse-de-loup perlée : comestible jeune (chair blanche).
+Rhodocollybia butyracea,1,Collybie beurrée : comestible médiocre.
+Laccaria amethystea,1,Laccaire améthyste : comestible médiocre.
+Laccaria laccata,1,Laccaire laqué : comestible médiocre.
+Laccaria proxima,1,Comestible médiocre.
+Laccaria bicolor,1,Comestible médiocre.
+Laccaria affinis,1,Comestible médiocre.
+Auricularia auricula-judae,1,Oreille de Judas : comestible.
+Pseudohydnum gelatinosum,1,Comestible (insipide).
+Agrocybe praecox,1,Comestible médiocre.
+Helvella crispa,2,Helvelle crépue : toxique crue, comestible bien cuite (déconseillée).
+Helvella lacunosa,2,Helvelle lacuneuse : toxique crue.
+Aleuria aurantia,2,Pézize orangée : comestible après cuisson.
+Phallus impudicus,3,Satyre puant : non comestible (œuf comestible).
+Clathrus archeri,3,Non comestible.
+Mutinus caninus,3,Non comestible.
+Tapinella atrotomentosa,3,Non comestible.
+Stropharia aeruginosa,4,Stropharie vert-de-gris : toxique.
+Stropharia caerulea,4,Toxique.
+Panaeolus papilionaceus,4,Toxique.
+Cortinarius violaceus,3,Cortinaire violet : non recommandé.
+Collybia fusipes,3,Collybie à pied fusiforme : non recommandée.
+Collybia dryophila,3,Non recommandée.
+Hygrocybe conica,3,Non recommandée.
+Pluteus cervinus,3,Plutée cerf : sans intérêt.
+Pluteus leoninus,3,Sans intérêt.
+Megacollybia platyphylla,3,Sans intérêt.
+Hymenopellis radicata,3,Sans intérêt.
+Mucidula mucida,3,Sans intérêt.
+Tricholomopsis rutilans,3,Sans intérêt.
+Lacrymaria lacrymabunda,3,Sans intérêt.
+Candolleomyces candolleanus,3,Sans intérêt.
+Hypholoma lateritium,3,Amer.
+Cystoderma amianthinum,3,Sans intérêt.
+Clavulina coralloides,3,Sans intérêt.
+Fomes fomentarius,3,Ligneux.
+Fomitopsis betulina,3,Ligneux.
+Fomitopsis pinicola,3,Ligneux.
+Ganoderma applanatum,3,Ligneux.
+Ganoderma lucidum,3,Ligneux.
+Trametes versicolor,3,Ligneux.
+Schizophyllum commune,3,Ligneux.
+Bjerkandera adusta,3,Ligneux.
+Heterobasidion annosum,3,Ligneux.
+Meripilus giganteus,3,Non recommandé.
+Bulgaria inquinans,3,Non comestible.
+Hypoxylon fragiforme,3,Non comestible.
+Xylaria hypoxylon,3,Non comestible.
+Xylaria polymorpha,3,Non comestible.
+Daldinia concentrica,3,Non comestible.
+Stereum hirsutum,3,Non comestible.
+Calocera viscosa,3,Non comestible.
+Leotia lubrica,3,Non comestible.
+Chlorociboria aeruginascens,3,Non comestible.
+Bisporella citrina,3,Non comestible.
+Rhytisma acerinum,3,Non comestible.
+Mycena galericulata,3,Sans intérêt.
+Mycena inclinata,3,Sans intérêt.
+Rickenella fibula,3,Sans intérêt.
+Panellus stipticus,3,Âcre.
+Trichaptum abietinum,3,Ligneux.
+Cortinarius *,3,Genre Cortinarius : plusieurs espèces mortelles (orellanine) ; ne jamais consommer sans détermination par un expert.
+Inocybe *,4,Genre Inocybe : presque toutes les espèces contiennent de la muscarine.
+Inosperma *,4,Muscarine.
+Pseudosperma *,4,Muscarine.
+Hebeloma *,4,Genre Hebeloma : toxique.
+Entoloma *,4,Genre Entoloma : espèces toxiques fréquentes ; aucune recommandée.
+Galerina *,5,Genre Galerina : espèces mortelles (amatoxines).
+Lepiota *,4,Genre Lepiota : plusieurs espèces mortelles.
+Scleroderma *,4,Toxique.
+Mycena *,3,Genre Mycena : sans intérêt culinaire.
+Stereum *,3,Ligneux.
+Trametes *,3,Ligneux.
+Xylaria *,3,Non comestible.
+Hypoxylon *,3,Non comestible.
+Crepidotus *,3,Non comestible.
+Marasmiellus *,3,Non comestible.
+Marasmius *,3,Sans intérêt.
+Psathyrella *,3,Sans intérêt.
+Pholiota *,3,Sans intérêt (confusion possible avec la galère marginée).
