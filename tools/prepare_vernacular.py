@@ -115,6 +115,7 @@ def main():
     ap.add_argument("--top", type=int, default=0, help="only the N most observed species")
     ap.add_argument("--offline", action="store_true", help="do not call the API")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--extra-csv", default=None, help="another CSV with the FongiBase columns: its species not in FongiBase are looked up in Wikidata too")
     ap.add_argument("--wikidata-top", type=int, default=4000, help="look up at most N species still without a name in Wikidata")
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -126,6 +127,10 @@ def main():
     species = [s for s in counts.index if s != "NA NA"]      # "NA NA" = species not recorded in the source
     if args.top:
         species = species[: args.top]
+    if args.extra_csv:
+        extra = pd.read_csv(args.extra_csv, usecols=["genus_species_ref"], dtype=str)["genus_species_ref"].dropna()
+        known = set(species)
+        species = species + [s for s in extra.value_counts().index if s not in known and s != "NA NA"]
     sp_cds = {}                                   # species -> [cd_ref sorted by frequency]
     for sp, grp in pairs.groupby("genus_species_ref"):
         sp_cds[sp] = list(grp.sort_values("n", ascending=False)["cd_ref"])
