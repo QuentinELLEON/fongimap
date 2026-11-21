@@ -29,8 +29,8 @@
   function buildChips(containerId, groups, set) {
     const el = $(containerId); el.innerHTML = '';
     const refs = groups.map((g) => {
-      const c = document.createElement('span');
-      c.className = 'chip'; c.title = g.label;
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'chip'; c.title = g.label; c.setAttribute('aria-pressed', 'false');
       if (g.swatch) { const s = document.createElement('i'); s.className = 'swatch'; s.style.background = g.swatch; c.appendChild(s); }
       c.appendChild(document.createTextNode(g.label));
       c.addEventListener('click', () => { toggleGroup(set, g); scheduleUpdate(); });
@@ -61,8 +61,8 @@
     // months
     const mg = $('filter-month');
     MONTHS.forEach((name, i) => {
-      const b = document.createElement('div');
-      b.className = 'month-btn'; b.textContent = name; b.dataset.m = i + 1;
+      const b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('aria-pressed', 'false'); b.className = 'month-btn'; b.textContent = name; b.dataset.m = i + 1;
       b.addEventListener('click', () => { toggleSet(state.monthSet, i + 1); scheduleUpdate(); });
       mg.appendChild(b);
     });
@@ -128,8 +128,8 @@
 
   // refresh chip / month / dept / edibility widgets and the badges from state
   function syncUI() {
-    chipRefs.forEach(({ refs, set }) => refs.forEach(({ g, el }) => el.classList.toggle('active', g.idx.length > 0 && g.idx.every((i) => set.has(i)))));
-    document.querySelectorAll('.month-btn').forEach((b) => b.classList.toggle('active', state.monthSet.has(+b.dataset.m)));
+    chipRefs.forEach(({ refs, set }) => refs.forEach(({ g, el }) => { const on = g.idx.length > 0 && g.idx.every((i) => set.has(i)); el.classList.toggle('active', on); el.setAttribute('aria-pressed', on); }));
+    document.querySelectorAll('.month-btn').forEach((b) => { const on = state.monthSet.has(+b.dataset.m); b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
     Array.from($('filter-dept').options).forEach((o) => { o.selected = state.deptSet.has(parseInt(o.value, 10)); });
     document.querySelectorAll('#seg-edible button').forEach((b) => b.classList.toggle('on', +b.dataset.v === state.edible));
     const chipCount = (id) => { const r = chipRefs.find((c) => c.id === id); return r ? r.refs.filter((x) => x.el.classList.contains('active')).length : 0; };
@@ -144,6 +144,7 @@
     const total = d3.sum(Object.values(counts)), tb = $('filters-badge');
     tb.textContent = total; tb.classList.toggle('on', total > 0);
     updateYearLabel();
+    renderFilterBar();
   }
 
   function setSpecies(indices, label) { state.speciesSet = new Set(indices); state.speciesLabel = label; }

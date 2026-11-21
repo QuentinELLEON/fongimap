@@ -76,6 +76,7 @@
     { label: 'Toxique', short: 'Toxique', colour: '#E69F00', icon: '⚠' },
     { label: 'Mortel', short: 'Mortel', colour: '#7a1b12', icon: '☠' },
   ];
+  EDI.forEach((e) => { e.ink = e.colour === '#7a1b12' ? '#ffffff' : '#1d160c'; });   // text colour with contrast >= 4.5:1 on the badge colour
 
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Number(n).toLocaleString('fr-FR');

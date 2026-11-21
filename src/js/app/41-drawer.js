@@ -65,7 +65,7 @@
       const tax = [info.tax.phylum, info.tax.class_, info.tax.order, info.tax.family].filter(Boolean).join(' › ');
       const img = info.imageUrl ? '<img alt="' + esc(info.name) + '" src="' + esc(info.imageUrl) + '">' : placeholderSvg(e, info.name);
       $('drawer-body').innerHTML =
-        '<figure class="dr-photo">' + img + '<figcaption>' + (info.imageUrl ? 'Photo' : 'Photo à venir') + '</figcaption></figure>' +
+        (info.imageUrl ? '<figure class="dr-photo">' + img + '<figcaption>Photo</figcaption></figure>' : '') +
         '<div class="dr-body">' +
         '<div><div class="dr-title' + (showsFrench(idx) ? '' : ' latin') + '">' + esc(displayName(idx)) + '</div>' + (showsFrench(idx) ? '<div class="dr-latin">' + esc(info.name) + '</div>' : '') +
         (aliasesOf(idx).length ? '<div class="dr-alias">Aussi appelé : ' + esc(aliasesOf(idx).join(', ')) + '</div>' : '') + '<div class="dr-tax">' + esc(tax) + '</div></div>' +

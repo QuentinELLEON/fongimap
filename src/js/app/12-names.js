@@ -52,5 +52,6 @@
     tipCache.clear(); tipTok++;
     if (lastAgg) renderBrowser(lastAgg);
     if (drawerSpecies >= 0) openSpecies(drawerSpecies, false);
+    scheduleHash();
   }
 
