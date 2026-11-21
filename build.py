@@ -612,7 +612,7 @@ def quantise(vals, vmin, vmax, in_range):
 YEAR_VALID = (1700, 2021)   # the dataset spans 1708-2021; anything else is a typo in the source
 
 
-def parse_dates(series, keep_jan1=False):
+def parse_dates(series, keep_jan1=False, year_max=2021):
     """Extract (year, month) arrays; 0 = missing.
     A date of exactly YYYY-01-01 is the source's placeholder for "year only" (70k records,
     ~7x the real January rate), so its month is stored as unknown unless keep_jan1."""
@@ -620,7 +620,7 @@ def parse_dates(series, keep_jan1=False):
     year = pd.to_numeric(parts[0], errors="coerce")
     month = pd.to_numeric(parts[1], errors="coerce")
     day = pd.to_numeric(parts[2], errors="coerce")
-    year = year.where(year.between(*YEAR_VALID))
+    year = year.where(year.between(YEAR_VALID[0], year_max))
     month = month.where(month.between(1, 12) & year.notna())
     if not keep_jan1:
         month = month.where(~((month == 1) & (day == 1)))
@@ -697,6 +697,8 @@ def main():
     ap.add_argument("--credit", default=None, help="attribution line shown in the app and in exports")
     ap.add_argument("--updated", default=None, help="date of the last update of the source (YYYY-MM-DD)")
     ap.add_argument("--synthetic", action="store_true", help="mark the dataset as synthetic (random data: a warning is shown)")
+    ap.add_argument("--year-min", type=int, default=1900, help="first year of the period slider")
+    ap.add_argument("--year-max", type=int, default=2021, help="last valid year of the dataset (also the end of the period slider)")
     ap.add_argument("--chunks", type=int, default=1, help="split the records by period into N files loaded progressively")
     args = ap.parse_args()
 
@@ -750,7 +752,7 @@ def main():
         assert n_before - ms["records_dropped"] == int((lon_q != COORD_MISSING).sum())
 
     # ---- dates ---------------------------------------------------------------
-    year, month = parse_dates(df["date"], args.keep_jan1)
+    year, month = parse_dates(df["date"], args.keep_jan1, args.year_max)
     log("Dates: {:,} with year, {:,} with month".format(int((year > 0).sum()), int((month > 0).sum())))
 
     # ---- dictionaries --------------------------------------------------------
@@ -861,6 +863,7 @@ def main():
         "places": places,
         "vernacular": vern,
         "chunks": chunks_meta or None,
+        "year_range": [args.year_min, args.year_max],
         "dataset": args.dataset_id,
         "edible": {"codes": e_codes, "notes": {str(k): v for k, v in e_notes.items()},
                    "genus_notes": e_gnotes},

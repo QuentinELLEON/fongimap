@@ -50,6 +50,11 @@
       }
       META = window.FMAP_META; DICT = META.dicts; N = META.n_records;
       DEPTS = window.FMAP_DEPTS; REGIONS = window.FMAP_REGIONS;
+      if (META.year_range) {
+        YEAR_LO = META.year_range[0]; YEAR_HI = META.year_range[1];
+        ['year-min', 'year-max'].forEach((id) => { $(id).min = YEAR_LO; $(id).max = YEAR_HI; });
+        $('year-min').value = YEAR_LO; $('year-max').value = YEAR_HI;
+      }
       speciesLower = DICT.species.map((s) => s.toLowerCase());
       mapDeptNames();
       if (META.edible) for (let i = 0; i < META.edible.codes.length; i++) ediOf[i] = META.edible.codes.charCodeAt(i) - 48;

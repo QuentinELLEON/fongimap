@@ -46,7 +46,7 @@
   // ── constants ─────────────────────────────────────────────────────────────
   const REC = 18;
   const SP_MISSING = 0xFFFE, MISSING = 0xFF, COORD_MISSING = 0xFFFF, Q_MAX = 65534;
-  const YEAR_LO = 1900, YEAR_HI = 2021;
+  let YEAR_LO = 1900, YEAR_HI = 2021;      // period slider range: set from META.year_range at boot
   const VIRT = 1000;                         // virtual map box the projection is fitted to
   const RARE_N = 100;                        // rarefaction sample size (Hurlbert)
   const EARTH_R_KM = 6371.0088;

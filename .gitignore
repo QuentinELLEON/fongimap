@@ -25,3 +25,4 @@ data_raw/wikidata_cache.json
 
 # development datasets (synthetic) and their chunks
 data-demo*.js
+data-gbif*.js
