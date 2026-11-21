@@ -1,1 +1,27 @@
 data_raw/DATA_Gautier et al 2022.csv
+
+# python caches
+__pycache__/
+*.pyc
+
+# generated test data and reports
+test_data/
+build_reports/
+dist/
+
+# raw downloads (large, fetched by script, checksum recorded in specs/architecture.md)
+data_raw/*.csv
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# raw inputs fetched by tools/fetch_raw.py or tools/prepare_*.py (checksums recorded there)
+data_raw/a_com2025_topo.json
+data_raw/*.jsonl
+data_raw/wikidata_cache.json
+
+# development datasets (synthetic) and their chunks
+data-demo*.js

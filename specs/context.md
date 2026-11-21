@@ -107,13 +107,13 @@ All files live in the project folder `fongimap/`.
 
 ## 4. Code Written (superseded — see §7)
 
-> **Note:** The user clarified that specs should be written before any code. The following files were created during an earlier, premature implementation pass. They should be reviewed against the final spec before being used.
+> **Historical (corrected 21 Nov 2026).** This section recorded the early state, when specs were being written before code. The three files below were later completed and are the **production** pipeline (see §7); the "do not use yet" statuses no longer apply.
 
-| File | Status | Note |
+| File | Status (at the time → now) | Note |
 |---|---|---|
-| `build.py` | Draft — **do not use yet** | ETL script skeleton, logic mostly correct but not validated against real CSV |
-| `assemble_html.py` | Draft — **do not use yet** | HTML assembly script |
-| `src/style.css` | Draft — **do not use yet** | Visual styles |
+| `build.py` | Draft → **production** | ETL, geocoding, land mask, hexagons, communes, edibility, packing; validated on the real CSV (§7.1) |
+| `assemble_html.py` | Draft → **production** | HTML assembly |
+| `src/style.css` | Draft → **production** | Visual styles |
 
 ---
 
@@ -241,3 +241,50 @@ Interpretation caveats: "Remove it" and "back to hexagons" were read together as
 
 Request: "clicking on a commune (example Valbonne) puts a filter on the commune". Without commune polygons (not downloaded), `build.py` `build_communes` assigns every site to a commune: the commune whose normalised name equals the site's main locality when its centre is within 12 km (10,789 of 45,200 sites), otherwise the nearest commune centre (numpy, chunked). `META.communes` (11,939 communes that have a site or a toponym: name, département code, centre) and `META.sites.commune` / `META.places.commune` carry the result; data.js 7.40 -> 8.04 MB. In the app a new failure bit `F_COMMUNE` (512) is evaluated per record through its site (records without position fail while the filter is on). Click a town label or a single place symbol -> `pickCommune` (filter + fly to the commune's places, at least ~8 km wide); click again or the chip clears it; clicking a group of places zooms in (the département click handler is skipped when a label or symbol is hit). The chosen commune is always labelled; the species browser follows the filter. Toponym threshold changed to 1.6e6 * k^-2 so towns of ~10k inhabitants (Valbonne) are named from k ~ 12. Verified on Valbonne (06): 302 observations, 180 species, 7 places, k 43; chip, badge, clearing and bubble click work. Caveats: membership is approximate (a GPS point near a boundary can fall in the neighbour; large communes with far-flung points are only as good as the nearest-centre rule); only communes with a place on the map can be picked.
 
+
+## 8. Cartographers' feedback round, repository review and roadmap (21 November 2026)
+
+**Trigger.** Feedback from cartographers, relayed as four requests (French wording kept):
+1. « Mettre la couleur des communes en délimitation et quand on zoom pour se repérer »
+2. « Améliorer l'UI générale de l'app »
+3. « Rajouter les noms français des champignons et non que Latin, pouvoir rechercher par les deux »
+4. « Pouvoir rajouter un 2e dataset, cette fois dynamique tout en améliorant les performances »
+
+plus an architectural constraint: the app is one `index.html` for ease, a server-backed dynamic dataset will come in a few months, but a **serverless** mode must remain possible. Scope of this round: analysis, architecture critique, documentation and **detailed implementation plans only — no feature code**.
+
+**What was done**
+- Repository reviewed end to end (code, build, specs, data composition). New `specs/architecture.md` lists 15 findings (A1–A15) and a target architecture; `specs/literature.md` records sources and how far each was verified; `specs/roadmap.md` orders the work; five implementation plans live in `specs/plans/` and are the bodies of GitHub issues.
+- Repository hygiene: `__pycache__` removed from the index, `.gitignore` completed, `CLAUDE.md` and `specs/README.md` added; `design.md`, `requirements.md`, `tasks.md` marked historical (they describe the v1.0 intent: bottom charts, GPS-dot subsample, two files, desktop-only…).
+
+**Measurements taken this session (real CSV and `data.js`)**
+- `data.js` = 8.04 MB: base64 records 5.30 MB; `META` 2.74 MB (sites 1.47, hexagon cells 0.48, communes 0.41, dictionaries 0.28, toponyms 0.09, edibility 0.02).
+- `cd_ref` (TAXREF) present on 94.9 % of rows; 11 619 distinct species names, 12 756 distinct (species, `cd_ref`) pairs, 707 species with more than one `cd_ref`.
+- Observation share covered by the most-observed species: top 100 = 32.8 %, top 500 = 65.9 %, top 2 000 = 91.0 % (this sets the French-names target: complete the top 500, ≥ 95 % of the top 2 000).
+- `matchesQuery` searches only Latin names and families, although the search placeholder suggests « cèpe »: French-name search does not work today.
+- Guild and trophic labels are shown as raw English FUNGuild values in the French UI.
+- Contrast (WCAG formula): `--fg3` on `--bg` 3.67:1; white on the « À cuire » badge colour 2.31:1; white on the « Toxique » colour 2.25:1.
+- Filter chips and month cells are non-focusable `span`/`div` elements.
+
+**Decisions proposed (not yet adopted; see `architecture.md` §5):** static-first / server-optional through `DataSource` + `Engine` ports; columnar package format v2 with dual `.bin`/`.js` encoding; canonical keys (`cd_ref`, INSEE, grid id); administrative geometry derived from commune topology; generated artefacts out of git; geometry/vernacular preparation as committed-output `tools/prepare_*.py` scripts so `build.py` keeps its pandas+numpy dependency set.
+
+**Interpretations to confirm with the cartographers**
+- Request 1 is read as "draw and **colour commune polygons** when zooming, as a choropleth continuing the département one, with a clear line-weight hierarchy" (also closing the open "département → commune" question of §7.6). Alternative reading (coloured outlines per département) was set aside.
+- Request 4 does not say what the second dataset is, how big it is, or what "dynamic" means (refreshed files vs. server-queried). The plan covers three regimes (embedded / chunked static / server) and lists the questions that decide between them.
+
+**Not verified in this round:** Worker-from-Blob behaviour on `file://` per browser (spike planned); real size of simplified commune geometry (spike planned); TAXREF vernacular file layout and Wikidata licence (to read at implementation time); Firefox/Edge/Safari behaviour of the current app (still unchecked since §7.5).
+
+## 9. Implementation of the five issues (21 November 2026)
+
+All five issues were implemented on branch `integration/cartographers-feedback` (one branch per issue merged with `--no-ff`; nothing merged into `main`). Verification: 14 Node tests (`node --test tests/`), the 20 golden scenarios run in the real page in worker and main-thread modes, and manual checks in the in-app browser. Measurements: `specs/performance.md`.
+
+**#5 Foundation.** `app.js` split into `src/js/app/*.js` (concatenated in order in one IIFE); the record engine (`src/js/core/engine.js`) is DOM-free and runs in a Web Worker (Blob, automatic fallback to the main thread, `?worker=0` forces it) behind a promise client (`engine-client.js`); the UI no longer touches per-record arrays. Golden baseline recorded from the original app before the refactor (`tests/golden/`). `tools/fetch_raw.py` (SHA-256 verified), `build/VENDOR.md`, CI workflow. **Not done:** a separate `geo` / `taxa` package split with canonical keys (only the commune geometry is a separate lazily loaded package, `geo-communes.js`); `esbuild`; reorganising folders; rewriting `requirements.md` / `design.md` v2.
+
+**#3 French names.** `tools/prepare_vernacular.py` (TAXREF v18 API by `cd_ref`, then Wikidata) -> `data_processed/vernacular_fr.csv`: 1 088 species, 62.2 % of observations, top 100/500/2 000 species 90/81/68 %. Search (`core/search.js`) is accent-, ligature-, hyphen- and plural-tolerant with type-ahead and ranking; French name first with Latin in italics (persisted toggle), aliases, "aussi appelé", alphabetical sort follows the shown name; FUNGuild guild / trophic labels translated. **Coverage gap:** 129 of the 500 most observed species have no French name in TAXREF or Wikidata (list in `build_reports/`, not versioned): they need a mycologist's review through `data_processed/vernacular_overrides.csv` (supported, empty).
+
+**#1 Commune layer.** `pipeline/communes.py` (numpy only) turns IGN ADMIN-EXPRESS COG PLUS 2025 (Licence Ouverte) into a topology-preserving package (2.20 MB base64) with arc classes; sites are assigned to communes by exact point-in-polygon (45 149 / 45 200); colour classes per commune, hierarchical borders drawn once per arc, names where they fit, hover tooltip, click filter, "Aller à une commune" search; semantic zoom départements -> hexagons -> communes -> places. **Deviations from the plan:** coordinates are stored as 16-bit longitude/latitude and projected in the browser at decode time (not pre-projected: no JS/Python projection parity to maintain); one level of detail (100 m); départements/régions are still drawn from the old GeoJSON at low zoom (not derived from the commune topology); land mask still uses the département polygons; the commune measure supports density and total only (no richness per commune). Valbonne moved from 302/180/7 to 313/181/9 (exact membership) and the golden baseline was re-baselined with a note.
+
+**#2 UI.** Contrast tokens fixed (`--fg3`, badge ink), real buttons for chips and months, keyboard map, live region, one active-filters bar, shareable URL hash (`core/urlstate.js`), PNG / CSV / link exports, responsive layout (tested at 375 px), print sheet. **Not done:** i18n extraction (T9) and dark theme (T11); no usability test with the cartographers and no axe-core run (no browser automation available here).
+
+**#4 Datasets.** `build.py --dataset-id/--title/--credit/--licence/--updated/--synthetic/--chunks` builds any CSV with the FongiBase columns into `data-<id>.js` (+ `datasets.js` registry, selector in the header, per-dataset credit, warning banner for synthetic data). Chunked datasets load newest period first and append the others in the background (`engine.append`; equivalence with one-shot loading tested). A remote engine client + reference server (`tools/serve_remote.js`) implement the HTTP contract and are tested against the local engine. Measured: columnar format brings no compression gain, filtering at 5 M records is 53–89 ms (not the 110–330 ms extrapolated). **Not done:** the real second dataset (chosen in the research PR), IndexedDB cache, manifest-based refresh script, PMTiles, columnar v2 (rejected by measurement).
+
+**Known gaps to verify:** Worker on `file://` per browser, Firefox / Safari / Edge, screen readers, touch devices, `data-demo.js` is a development artefact (synthetic, git-ignored).

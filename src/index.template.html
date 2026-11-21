@@ -21,8 +21,9 @@
         <p class="subtitle">Où et quand trouve-t-on quels champignons en France ?</p>
       </div>
     </div>
-    <p id="headline"><b id="n-filtered">—</b> observations · <b id="n-species">—</b> espèces · <b id="n-depts">—</b> départements</p>
+    <p id="headline"><b id="n-filtered">—</b> observations · <b id="n-species">—</b> espèces · <b id="n-depts">—</b> départements <span id="chunk-progress" class="hidden"></span></p>
     <div id="header-right">
+      <select id="sel-dataset" class="hidden" aria-label="Jeu de données" title="Jeu de données"></select>
       <div class="seg seg-dark" id="seg-edible" role="group" aria-label="Comestibilité">
         <button data-v="0" class="on" title="Toutes les espèces">Tous</button>
         <button data-v="1" title="Espèces comestibles (indicatif)">🍽 Comestibles</button>
@@ -33,6 +34,7 @@
     </div>
   </header>
 
+  <div id="ds-banner" class="hidden" role="alert">⚠ Jeu de données <b>synthétique</b> : valeurs aléatoires de démonstration, sans lien avec de vraies observations.</div>
   <div id="main">
     <aside id="sidebar">
       <nav id="side-tabs" role="tablist">
@@ -42,7 +44,8 @@
 
       <div class="side-panel on" id="panel-species">
         <div class="sp-top">
-          <input type="search" id="search-species" placeholder="Chercher : cèpe, Amanita, famille…" autocomplete="off" spellcheck="false" aria-label="Chercher une espèce">
+          <input type="search" id="search-species" placeholder="Chercher : cèpe, girolle, Amanita, famille…" autocomplete="off" spellcheck="false" aria-label="Chercher une espèce">
+          <div class="sp-names"><span>Nom affiché</span><div class="seg seg-small" id="seg-name" role="group" aria-label="Nom affiché en premier"><button data-v="fr" class="on">Français</button><button data-v="latin">Latin</button></div></div>
           <div id="species-active" class="hidden"></div>
           <div id="commune-active" class="hidden"></div>
           <div class="sp-bar">
@@ -95,21 +98,25 @@
           Données : <a href="https://zenodo.org/records/17158524" target="_blank" rel="noopener">FongiBase</a>,
           Gautier et al. 2022 — DOI&nbsp;10.5281/zenodo.17158524 — CC-BY&nbsp;4.0.<br>
           Fond de carte : gregoiredavid/france-geojson. Noms et populations des communes : geo.api.gouv.fr.<br>
+          <span id="ds-credit"></span><br>
           <b>Comestibilité indicative</b> : ne jamais consommer un champignon sur la seule base de cette application.
         </footer>
       </div>
     </aside>
 
     <div id="content">
+      <div id="filter-bar" class="hidden" role="group" aria-label="Filtres actifs"></div>
       <div id="map-panel">
         <div id="map-container">
           <svg id="map-svg"></svg>
           <canvas id="grid-canvas"></canvas>
+          <canvas id="commune-canvas"></canvas>
           <canvas id="dot-canvas"></canvas>
           <canvas id="label-canvas"></canvas>
           <div id="map-tooltip" class="tooltip hidden"></div>
           <div id="preview-tag" class="hidden"></div>
 
+          <div id="commune-box"><input type="search" id="commune-search" placeholder="Aller à une commune…" autocomplete="off" spellcheck="false" aria-label="Aller à une commune" role="combobox" aria-expanded="false" aria-controls="commune-results"><ul id="commune-results" class="hidden" role="listbox"></ul></div>
           <div id="options-wrap">
             <button type="button" id="btn-options" aria-haspopup="true">⚙ Options de la carte</button>
             <div id="options-pop" class="hidden">
@@ -118,6 +125,7 @@
                   <button data-v="auto" class="on" title="Le niveau de détail suit le zoom">Auto</button>
                   <button data-v="dept" title="Départements">Départements</button>
                   <button data-v="grid" title="Hexagones de 10 km">Hexagones</button>
+                  <button data-v="communes" title="Limites et couleurs des communes">Communes</button>
                   <button data-v="sites" title="Lieux de récolte">Lieux</button>
                 </div>
               </div>
@@ -129,6 +137,7 @@
                   <option value="rarefied">Richesse raréfiée (100 obs.)</option>
                 </select>
               </label>
+              <div class="opt-row"><span>Partager et exporter</span><div class="opt-actions"><button type="button" id="btn-copylink">Copier le lien</button><button type="button" id="btn-png" title="Image de la carte avec légende et sources">Image PNG</button><button type="button" id="btn-csv" title="Liste des espèces de la vue, en CSV">Liste CSV</button></div></div>
               <label class="opt-row chk" title="Décocher pour ne garder que les vrais points GPS"><input type="checkbox" id="chk-approx" checked> Afficher les positions approximatives (centre de commune)</label>
             </div>
           </div>
@@ -189,6 +198,7 @@
     </div>
   </div>
 
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
   <div id="loading-overlay">
     <div class="loading-box">
       <span class="logo-big">🍄</span>
@@ -200,13 +210,26 @@
 </div>
 
 <!-- Embedded data (generated by build.py). Loaded as a classic script so it works on file:// -->
-<script src="data.js"></script>
-
+<script src="datasets.js" onerror="window.FMAP_DATASETS=null"></script>
 <script>
+/* which dataset? ?ds=<id> picks data-<id>.js (default: data.js); the registry datasets.js only feeds the selector */
+(function () {
+  var m = /[?&]ds=([\w-]+)/.exec(location.search), id = m ? m[1] : 'fongibase';
+  window.FMAP_DS_ID = id;
+  var d = (window.FMAP_DATASETS || []).filter(function (e) { return e.id === id; })[0];
+  var file = d ? d.file : (id === 'fongibase' ? 'data.js' : 'data-' + id + '.js');
+  document.write('<script src="' + file + '"><\/script>');
+})();
+</script>
+
+<script id="fmap-fflate">
 /*%%FFLATE%%*/
 </script>
 <script>
 /*%%D3%%*/
+</script>
+<script id="fmap-core">
+/*%%CORE%%*/
 </script>
 <script>
 window.FMAP_DEPTS = /*%%DEPTS%%*/;

@@ -1,3 +1,5 @@
+> **HISTORICAL — v1.0 (Nov 2026).** Several requirements no longer match the app: FR-03/FR-04 (GPS dots, screen hexbin), FR-06 (charts), NFR-01.1 ("exactly two files"), NFR-03.1 (index.html < 1.2 MB, will not hold with commune geometry), §3 out-of-scope items (mobile, export, commune level). A v2 is planned in [`plans/architecture-foundation.md`](plans/architecture-foundation.md) step 1. Current planned work: [`roadmap.md`](roadmap.md).
+
 # FongiMap — Requirements
 
 **Version:** 1.0  

@@ -3,7 +3,8 @@
 Assemble the standalone index.html from:
   src/index.template.html   page skeleton with placeholders
   src/style.css             styles
-  src/app.js                application logic
+  src/js/core/*.js          record engine (filters, aggregation) + engine client; also run in a Web Worker and in Node tests
+  src/js/app/*.js           application logic, concatenated in file-name order inside one IIFE
   build/fflate.umd.js       zlib inflate (inlined)
   build/d3.min.js           D3 v7 (inlined)
   data_processed/*.geojson  basemap (inlined, coordinates rounded to 4 decimals)
@@ -19,6 +20,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 MAX_KB = 1.2 * 1024  # NFR-03.1
+
+
+CORE_FILES = ["engine.js", "engine-client.js", "search.js", "urlstate.js", "engine-remote.js"]          # order matters only for readability: everything is resolved at call time
+
+
+def concat_js(folder, names=None):
+    files = [ROOT / "src" / "js" / folder / n for n in names] if names else sorted((ROOT / "src" / "js" / folder).glob("*.js"))
+    return "\n".join(Path(f).read_text(encoding="utf-8") for f in files)
 
 
 def read(path):
@@ -52,7 +61,7 @@ def main():
     ap.add_argument("--out", default=str(ROOT), help="output directory for index.html")
     args = ap.parse_args()
 
-    for p in ("src/app.js", "src/style.css", "src/index.template.html", "build/d3.min.js",
+    for p in ("src/js/app/00-state.js", "src/js/core/engine.js", "src/style.css", "src/index.template.html", "build/d3.min.js",
               "build/fflate.umd.js", "data_processed/departements.geojson",
               "data_processed/regions.geojson"):
         if not (ROOT / p).is_file():
@@ -65,7 +74,8 @@ def main():
         "/*%%D3%%*/": safe_script(read(ROOT / "build" / "d3.min.js")),
         "/*%%DEPTS%%*/": compact_geojson(ROOT / "data_processed" / "departements.geojson"),
         "/*%%REGIONS%%*/": compact_geojson(ROOT / "data_processed" / "regions.geojson"),
-        "/*%%APP%%*/": safe_script(read(ROOT / "src" / "app.js")),
+        "/*%%CORE%%*/": safe_script(concat_js("core", CORE_FILES)),
+        "/*%%APP%%*/": safe_script(concat_js("app")),
     }
     for key, val in parts.items():
         if key not in html:

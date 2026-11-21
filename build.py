@@ -50,6 +50,7 @@ written to data.js together with the dictionaries.
 
 import argparse
 import base64
+import csv
 import json
 import re
 import unicodedata
@@ -61,9 +62,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from pipeline import communes as communes_geo
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parent
 LAT_MIN, LAT_MAX = 41.0, 51.5
 LON_MIN, LON_MAX = -5.5, 10.0
 Q_MAX = 65534            # highest valid quantised value
@@ -226,6 +230,29 @@ def load_edibility(species):
         else:
             codes.append(genus.get(sp.split(" ")[0], 0))
     return "".join(str(c) for c in codes), notes, gnotes
+
+
+VERNACULAR_CSV = ROOT_DIR / "data_processed" / "vernacular_fr.csv"
+
+
+def load_vernacular(species):
+    """French vernacular names (data_processed/vernacular_fr.csv, made by tools/prepare_vernacular.py).
+
+    Returns {"idx": [species index, ...], "names": ["Primary|Alias|Alias", ...]} (sparse, parallel arrays) or None.
+    Rows with status "proposed" are never shipped: only TAXREF ("source") and human-checked ("validated") names."""
+    if not VERNACULAR_CSV.exists():
+        log("Vernacular names: %s not found (Latin names only)" % VERNACULAR_CSV.name)
+        return None
+    pos = {name: i for i, name in enumerate(species)}
+    idx, names = [], []
+    with open(VERNACULAR_CSV, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("status") == "proposed" or row["species"] not in pos or not row["name_fr"]:
+                continue
+            idx.append(pos[row["species"]])
+            names.append("|".join([row["name_fr"]] + [a for a in row["aliases"].split("|") if a]))
+    order = sorted(range(len(idx)), key=lambda k: idx[k])
+    return {"idx": [idx[k] for k in order], "names": [names[k] for k in order]}
 
 
 # ---- Lambert-93 (EPSG:2154), ellipsoidal two-parallel conic conformal (EPSG method 9802) -------
@@ -411,6 +438,8 @@ def build_places(path_centres, path_pop):
 
 
 COMMUNES_JSON = Path(__file__).resolve().parent / "data_raw" / "communes.json"
+COMMUNE_TOPO = Path(__file__).resolve().parent / "data_raw" / "a_com2025_topo.json"
+COMMUNE_SIMPLIFY_M = 100.0     # Douglas-Peucker tolerance of the commune geometry shipped to the browser (metres)
 
 
 def norm_place(s):
@@ -660,6 +689,15 @@ def main():
     ap.add_argument("--no-mask", action="store_true", help="do not clip positions to the land area of the basemap")
     ap.add_argument("--keep-jan1", action="store_true",
                     help="keep YYYY-01-01 dates as real January observations")
+    # several datasets: the same pipeline builds any CSV with the FongiBase columns (see WANTED) into data-<id>.js
+    ap.add_argument("--dataset-id", default="fongibase", help="dataset identifier; fongibase -> data.js, any other -> data-<id>.js")
+    ap.add_argument("--title", default=None, help="name shown in the dataset selector")
+    ap.add_argument("--source", default=None, help="URL of the source")
+    ap.add_argument("--licence", default=None, help="licence of the data")
+    ap.add_argument("--credit", default=None, help="attribution line shown in the app and in exports")
+    ap.add_argument("--updated", default=None, help="date of the last update of the source (YYYY-MM-DD)")
+    ap.add_argument("--synthetic", action="store_true", help="mark the dataset as synthetic (random data: a warning is shown)")
+    ap.add_argument("--chunks", type=int, default=1, help="split the records by period into N files loaded progressively")
     args = ap.parse_args()
 
     t0 = time.time()
@@ -742,14 +780,28 @@ def main():
     assert arr.nbytes == RECORD_SIZE * n
     # Record order carries no meaning: sort by (dept, species) so that equal bytes sit
     # together and zlib compresses ~25 % better (stable sort -> deterministic output).
-    arr = arr[np.lexsort((arr["species"], arr["dept"]))]
-    raw = arr.tobytes()
-    log("Packed: {:.2f} MB ({} bytes/record)".format(len(raw) / 1e6, RECORD_SIZE))
-
-    comp = zlib.compress(raw, 9)
-    b64 = base64.b64encode(comp).decode("ascii")
-    log("Compressed: {:.2f} MB (x{:.1f}); base64: {:.2f} MB".format(
-        len(comp) / 1e6, len(raw) / max(len(comp), 1), len(b64) / 1e6))
+    chunks_meta, chunk_files = [], []
+    if args.chunks > 1:
+        # append-only chunks by period (oldest first); every chunk is sorted by (dept, species) for compression
+        arr = arr[np.argsort(arr["year"], kind="stable")]
+        for ci, idx in enumerate(np.array_split(np.arange(n), args.chunks)):
+            part = arr[idx]
+            part = part[np.lexsort((part["species"], part["dept"]))]
+            comp_c = zlib.compress(part.tobytes(), 9)
+            yrs = part["year"][part["year"] > 0]
+            fname_c = "data-%s.%04d.js" % (args.dataset_id, ci + 1)
+            chunks_meta.append({"file": fname_c, "n": int(len(part)), "year0": int(yrs.min()) if len(yrs) else 0, "year1": int(yrs.max()) if len(yrs) else 0})
+            chunk_files.append((fname_c, base64.b64encode(comp_c).decode("ascii"), int(len(part))))
+        b64 = ""
+        log("Chunks: %d files, %s MB base64 in total" % (args.chunks, "%.2f" % (sum(len(c[1]) for c in chunk_files) / 1e6)))
+    else:
+        arr = arr[np.lexsort((arr["species"], arr["dept"]))]
+        raw = arr.tobytes()
+        log("Packed: {:.2f} MB ({} bytes/record)".format(len(raw) / 1e6, RECORD_SIZE))
+        comp = zlib.compress(raw, 9)
+        b64 = base64.b64encode(comp).decode("ascii")
+        log("Compressed: {:.2f} MB (x{:.1f}); base64: {:.2f} MB".format(
+            len(comp) / 1e6, len(raw) / max(len(comp), 1), len(b64) / 1e6))
 
     # ---- sites (exact GPS positions) and edibility -------------------------------------
     s_lon, s_lat, s_loc, s_names, s_apx, s_cell, cells = build_sites(lon_q, lat_q, df["locality"], approx)
@@ -757,11 +809,36 @@ def main():
     log("Sites: {:,} distinct positions ({:,} approximate), {:,} locality names".format(
         len(s_lon), sum(s_apx), len(s_names) - 1))
     log("Located records: {:,} ({:.1f}%)".format(int((lon_q != COORD_MISSING).sum()), 100.0 * (lon_q != COORD_MISSING).mean()))
-    places = build_places(COMMUNES_JSON, POP_JSON)
-    if places:
-        log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
-    communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
+    geo_pkg = None
+    if COMMUNE_TOPO.is_file():
+        # polygon-based communes (IGN ADMIN-EXPRESS COG PLUS): exact commune of every site, geometry package for the browser
+        cg = communes_geo.build(COMMUNE_TOPO, eps_m=COMMUNE_SIMPLIFY_M, log=log)
+        s_lonlat_deg = (LON_MIN + np.asarray(s_lon) / Q_MAX * (LON_MAX - LON_MIN), LAT_MIN + np.asarray(s_lat) / Q_MAX * (LAT_MAX - LAT_MIN))
+        s_commune = communes_geo.assign_sites(cg, s_lonlat_deg[0], s_lonlat_deg[1], log=log).tolist()
+        communes = cg["table"]
+        order = sorted((i for i, p in enumerate(communes["pop"]) if p >= PLACE_MIN_POP), key=lambda i: -communes["pop"][i])
+        lonk, latk = (LON_MAX - LON_MIN) / Q_MAX, (LAT_MAX - LAT_MIN) / Q_MAX
+        places = {"names": [communes["names"][i] for i in order],
+                  "lon": [round(LON_MIN + communes["lonq"][i] * lonk, 3) for i in order],
+                  "lat": [round(LAT_MIN + communes["latq"][i] * latk, 3) for i in order],
+                  "pop": [communes["pop"][i] for i in order], "commune": order}
+        log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(order), PLACE_MIN_POP))
+        geo_pkg = {"version": 1, "source": "IGN ADMIN-EXPRESS COG PLUS 2025 (Licence Ouverte)", "simplify_m": COMMUNE_SIMPLIFY_M,
+                   "n_communes": len(communes["code"]), "n_arcs": cg["n_arcs"], "sizes": cg["sizes"], "data": cg["b64"]}
+    else:
+        log("Commune polygons not found (%s): using commune centres only. Run: python tools/fetch_raw.py --what communes" % COMMUNE_TOPO.name)
+        places = build_places(COMMUNES_JSON, POP_JSON)
+        if places:
+            log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
+        communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
     e_codes, e_notes, e_gnotes = load_edibility(sp_d)
+    vern = load_vernacular(sp_d)
+    if vern:
+        counts = np.bincount(sp[sp != SPECIES_MISSING], minlength=len(sp_d))
+        have = np.zeros(len(sp_d), dtype=bool); have[vern["idx"]] = True
+        log("Vernacular names: %s species have a French name (%.1f%% of observations; top 100/500/2000 species: %s)" % (
+            "{:,}".format(len(vern["idx"])), 100.0 * counts[have].sum() / max(counts.sum(), 1),
+            " / ".join("%.0f%%" % (100.0 * counts[:n][have[:n]].sum() / max(counts[:n].sum(), 1)) for n in (100, 500, 2000))))
     known = np.array([int(c) for c in e_codes], dtype=np.int64)
     valid_sp = sp != SPECIES_MISSING
     cov = 100.0 * (known[sp[valid_sp]] > 0).mean() if valid_sp.any() else 0.0
@@ -782,6 +859,9 @@ def main():
         "communes": communes,
         "cells": cells,
         "places": places,
+        "vernacular": vern,
+        "chunks": chunks_meta or None,
+        "dataset": args.dataset_id,
         "edible": {"codes": e_codes, "notes": {str(k): v for k, v in e_notes.items()},
                    "genus_notes": e_gnotes},
     }
@@ -789,18 +869,64 @@ def main():
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / "data.js"
+    fname = "data.js" if args.dataset_id == "fongibase" else "data-%s.js" % args.dataset_id
+    out = out_dir / fname
+    default_credit = "FongiBase dataset - (c) Gautier et al. 2022, licence CC-BY 4.0"
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write("// Auto-generated by build.py - do not edit manually\n")
-        f.write("// FongiBase dataset - (c) Gautier et al. 2022, licence CC-BY 4.0\n")
-        f.write("// Source: https://zenodo.org/records/17158524\n\n")
+        f.write("// %s\n" % (args.credit or (default_credit if args.dataset_id == "fongibase" else "dataset " + args.dataset_id)))
+        f.write("// Source: %s\n\n" % (args.source or "https://zenodo.org/records/17158524"))
         f.write("window.FMAP_META = %s;\n\n" % meta_json)
         f.write("window.FMAP_DATA = '%s';\n" % b64)
+    for fname_c, b64_c, n_c in chunk_files:
+        with open(out_dir / fname_c, "w", encoding="utf-8", newline="\n") as f:
+            f.write("window.FMAP_CHUNKS = window.FMAP_CHUNKS || {};\n")
+            f.write("window.FMAP_CHUNKS[%s] = {\"n\":%d,\"data\":\"%s\"};\n" % (json.dumps(fname_c), n_c, b64_c))
+    update_registry(out_dir, args, fname, int(n), chunks_meta)
+    if geo_pkg:
+        gout = out_dir / "geo-communes.js"
+        with open(gout, "w", encoding="utf-8", newline="\n") as f:
+            f.write("// Auto-generated by build.py - do not edit manually\n")
+            f.write("// Commune boundaries: IGN ADMIN-EXPRESS COG PLUS 2025, Licence Ouverte (simplified)\n\n")
+            f.write("window.FMAP_GEO_COMMUNES = %s;\n" % json.dumps(geo_pkg, separators=(",", ":")))
+        log("Wrote %s  (%.2f MB)" % (gout, gout.stat().st_size / 1e6))
     size_mb = out.stat().st_size / 1e6
     log("\nWrote %s  (%.2f MB, %.1fs total)" % (out, size_mb, time.time() - t0))
     if size_mb > MAX_DATAJS_MB:
         log("WARNING: data.js exceeds the %.0f MB target." % MAX_DATAJS_MB)
     log("Next: python assemble_html.py   (then open index.html next to data.js)")
+
+
+def update_registry(out_dir, args, fname, n, chunks_meta):
+    """datasets.js: the list of datasets the app can offer in its selector (one entry per build, merged by id)."""
+    path = out_dir / "datasets.js"
+    entries = []
+    if path.exists():
+        txt = path.read_text(encoding="utf-8")
+        i, j = txt.find("["), txt.rfind("]")
+        if 0 <= i < j:
+            try:
+                entries = json.loads(txt[i:j + 1])
+            except ValueError:
+                entries = []
+    is_main = args.dataset_id == "fongibase"
+    entry = {
+        "id": args.dataset_id,
+        "title": args.title or ("FongiBase 2022 (Gautier et al.)" if is_main else args.dataset_id),
+        "file": fname,
+        "source": args.source or ("https://zenodo.org/records/17158524" if is_main else None),
+        "licence": args.licence or ("CC-BY 4.0" if is_main else None),
+        "credit": args.credit or ("FongiBase, Gautier et al. 2022, DOI 10.5281/zenodo.17158524, CC-BY 4.0" if is_main else None),
+        "updated": args.updated,
+        "records": n,
+        "mode": "chunked" if chunks_meta else "embedded",
+        "synthetic": bool(args.synthetic),
+    }
+    entries = [e for e in entries if e.get("id") != entry["id"]] + [entry]
+    entries.sort(key=lambda e: (e["id"] != "fongibase", e["id"]))
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("// Auto-generated by build.py - the datasets offered by index.html\n")
+        f.write("window.FMAP_DATASETS = %s;\n" % json.dumps(entries, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
