@@ -50,6 +50,7 @@ written to data.js together with the dictionaries.
 
 import argparse
 import base64
+import csv
 import json
 import re
 import unicodedata
@@ -61,9 +62,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from pipeline import communes as communes_geo
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parent
 LAT_MIN, LAT_MAX = 41.0, 51.5
 LON_MIN, LON_MAX = -5.5, 10.0
 Q_MAX = 65534            # highest valid quantised value
@@ -226,6 +230,29 @@ def load_edibility(species):
         else:
             codes.append(genus.get(sp.split(" ")[0], 0))
     return "".join(str(c) for c in codes), notes, gnotes
+
+
+VERNACULAR_CSV = ROOT_DIR / "data_processed" / "vernacular_fr.csv"
+
+
+def load_vernacular(species):
+    """French vernacular names (data_processed/vernacular_fr.csv, made by tools/prepare_vernacular.py).
+
+    Returns {"idx": [species index, ...], "names": ["Primary|Alias|Alias", ...]} (sparse, parallel arrays) or None.
+    Rows with status "proposed" are never shipped: only TAXREF ("source") and human-checked ("validated") names."""
+    if not VERNACULAR_CSV.exists():
+        log("Vernacular names: %s not found (Latin names only)" % VERNACULAR_CSV.name)
+        return None
+    pos = {name: i for i, name in enumerate(species)}
+    idx, names = [], []
+    with open(VERNACULAR_CSV, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("status") == "proposed" or row["species"] not in pos or not row["name_fr"]:
+                continue
+            idx.append(pos[row["species"]])
+            names.append("|".join([row["name_fr"]] + [a for a in row["aliases"].split("|") if a]))
+    order = sorted(range(len(idx)), key=lambda k: idx[k])
+    return {"idx": [idx[k] for k in order], "names": [names[k] for k in order]}
 
 
 # ---- Lambert-93 (EPSG:2154), ellipsoidal two-parallel conic conformal (EPSG method 9802) -------
@@ -411,6 +438,8 @@ def build_places(path_centres, path_pop):
 
 
 COMMUNES_JSON = Path(__file__).resolve().parent / "data_raw" / "communes.json"
+COMMUNE_TOPO = Path(__file__).resolve().parent / "data_raw" / "a_com2025_topo.json"
+COMMUNE_SIMPLIFY_M = 100.0     # Douglas-Peucker tolerance of the commune geometry shipped to the browser (metres)
 
 
 def norm_place(s):
@@ -757,11 +786,36 @@ def main():
     log("Sites: {:,} distinct positions ({:,} approximate), {:,} locality names".format(
         len(s_lon), sum(s_apx), len(s_names) - 1))
     log("Located records: {:,} ({:.1f}%)".format(int((lon_q != COORD_MISSING).sum()), 100.0 * (lon_q != COORD_MISSING).mean()))
-    places = build_places(COMMUNES_JSON, POP_JSON)
-    if places:
-        log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
-    communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
+    geo_pkg = None
+    if COMMUNE_TOPO.is_file():
+        # polygon-based communes (IGN ADMIN-EXPRESS COG PLUS): exact commune of every site, geometry package for the browser
+        cg = communes_geo.build(COMMUNE_TOPO, eps_m=COMMUNE_SIMPLIFY_M, log=log)
+        s_lonlat_deg = (LON_MIN + np.asarray(s_lon) / Q_MAX * (LON_MAX - LON_MIN), LAT_MIN + np.asarray(s_lat) / Q_MAX * (LAT_MAX - LAT_MIN))
+        s_commune = communes_geo.assign_sites(cg, s_lonlat_deg[0], s_lonlat_deg[1], log=log).tolist()
+        communes = cg["table"]
+        order = sorted((i for i, p in enumerate(communes["pop"]) if p >= PLACE_MIN_POP), key=lambda i: -communes["pop"][i])
+        lonk, latk = (LON_MAX - LON_MIN) / Q_MAX, (LAT_MAX - LAT_MIN) / Q_MAX
+        places = {"names": [communes["names"][i] for i in order],
+                  "lon": [round(LON_MIN + communes["lonq"][i] * lonk, 3) for i in order],
+                  "lat": [round(LAT_MIN + communes["latq"][i] * latk, 3) for i in order],
+                  "pop": [communes["pop"][i] for i in order], "commune": order}
+        log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(order), PLACE_MIN_POP))
+        geo_pkg = {"version": 1, "source": "IGN ADMIN-EXPRESS COG PLUS 2025 (Licence Ouverte)", "simplify_m": COMMUNE_SIMPLIFY_M,
+                   "n_communes": len(communes["code"]), "n_arcs": cg["n_arcs"], "sizes": cg["sizes"], "data": cg["b64"]}
+    else:
+        log("Commune polygons not found (%s): using commune centres only. Run: python tools/fetch_raw.py --what communes" % COMMUNE_TOPO.name)
+        places = build_places(COMMUNES_JSON, POP_JSON)
+        if places:
+            log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
+        communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
     e_codes, e_notes, e_gnotes = load_edibility(sp_d)
+    vern = load_vernacular(sp_d)
+    if vern:
+        counts = np.bincount(sp[sp != SPECIES_MISSING], minlength=len(sp_d))
+        have = np.zeros(len(sp_d), dtype=bool); have[vern["idx"]] = True
+        log("Vernacular names: %s species have a French name (%.1f%% of observations; top 100/500/2000 species: %s)" % (
+            "{:,}".format(len(vern["idx"])), 100.0 * counts[have].sum() / max(counts.sum(), 1),
+            " / ".join("%.0f%%" % (100.0 * counts[:n][have[:n]].sum() / max(counts[:n].sum(), 1)) for n in (100, 500, 2000))))
     known = np.array([int(c) for c in e_codes], dtype=np.int64)
     valid_sp = sp != SPECIES_MISSING
     cov = 100.0 * (known[sp[valid_sp]] > 0).mean() if valid_sp.any() else 0.0
@@ -782,6 +836,7 @@ def main():
         "communes": communes,
         "cells": cells,
         "places": places,
+        "vernacular": vern,
         "edible": {"codes": e_codes, "notes": {str(k): v for k, v in e_notes.items()},
                    "genus_notes": e_gnotes},
     }
@@ -796,6 +851,13 @@ def main():
         f.write("// Source: https://zenodo.org/records/17158524\n\n")
         f.write("window.FMAP_META = %s;\n\n" % meta_json)
         f.write("window.FMAP_DATA = '%s';\n" % b64)
+    if geo_pkg:
+        gout = out_dir / "geo-communes.js"
+        with open(gout, "w", encoding="utf-8", newline="\n") as f:
+            f.write("// Auto-generated by build.py - do not edit manually\n")
+            f.write("// Commune boundaries: IGN ADMIN-EXPRESS COG PLUS 2025, Licence Ouverte (simplified)\n\n")
+            f.write("window.FMAP_GEO_COMMUNES = %s;\n" % json.dumps(geo_pkg, separators=(",", ":")))
+        log("Wrote %s  (%.2f MB)" % (gout, gout.stat().st_size / 1e6))
     size_mb = out.stat().st_size / 1e6
     log("\nWrote %s  (%.2f MB, %.1fs total)" % (out, size_mb, time.time() - t0))
     if size_mb > MAX_DATAJS_MB:

@@ -92,7 +92,7 @@
     gBase.attr('transform', 'translate(' + base.ox + ',' + base.oy + ') scale(' + base.s + ')');
     zoom.extent([[0, 0], [w, h]]).translateExtent([[0, 0], [w, h]]);
     const dpr = window.devicePixelRatio || 1;
-    ['grid-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
+    ['grid-canvas', 'commune-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
       const c = $(id);
       c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
       c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);

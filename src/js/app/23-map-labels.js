@@ -33,12 +33,12 @@
     if (w === undefined) { ctx.font = font; w = ctx.measureText(text).width; textWidths.set(key, w); }
     return w;
   }
-  const FONT = { region: '700 11px system-ui, sans-serif', dept: '600 10px system-ui, sans-serif', townBig: '700 12px system-ui, sans-serif', town: '500 10.5px system-ui, sans-serif', site: 'italic 600 10px system-ui, sans-serif', sea: 'italic 11px system-ui, sans-serif', land: '600 10px system-ui, sans-serif' };
+  const FONT = { commune: '500 10px system-ui, sans-serif', region: '700 11px system-ui, sans-serif', dept: '600 10px system-ui, sans-serif', townBig: '700 12px system-ui, sans-serif', town: '500 10.5px system-ui, sans-serif', site: 'italic 600 10px system-ui, sans-serif', sea: 'italic 11px system-ui, sans-serif', land: '600 10px system-ui, sans-serif' };
 
   // choose which labels fit: greedy by priority, rejecting any that overlaps one already placed
   function layoutLabels(al) {
     const k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy;
-    const key = [tf.x.toFixed(1), tf.y.toFixed(1), k.toFixed(3), base.w, base.h, labelVer, al.dotA > 0.5 ? 1 : 0, [...state.deptSet].join(','), state.commune].join('|');
+    const key = [tf.x.toFixed(1), tf.y.toFixed(1), k.toFixed(3), base.w, base.h, labelVer, al.dotA > 0.5 ? 1 : 0, al.communeA > 0.5 ? 1 : 0, [...state.deptSet].join(','), state.commune].join('|');
     if (key === labelKey) return;
     labelKey = key;
     const ctx = $('label-canvas').getContext('2d'), W = base.w, H = base.h;
@@ -48,7 +48,7 @@
     const put = (kind, text, x, y, opt) => {
       const w = textW(ctx, FONT[kind], text) + (kind === 'region' ? text.length * 1.2 : 0), h = 12;
       const dot = kind === 'town' || kind === 'townBig', lk = text.toLowerCase();
-      if (kind === 'site' && used.has(lk)) return false;      // a place already named as a town is not named twice
+      if ((kind === 'site' || kind === 'commune') && used.has(lk)) return false;      // a place already named as a town is not named twice
       const x0 = dot ? x + 5 : x - w / 2, y0 = y - h / 2;
       if (!inView(x, y) || !fits(x0 - (dot ? 8 : 0), y0, x0 + w, y0 + h)) return false;
       used.add(lk);
@@ -88,6 +88,19 @@
         const nm = siteName[siteLoc[c.s]]; if (nm) put('site', nm, c.x, c.y - c.r - 7);
       });
     }
+    // 5b. commune names wherever the polygon is wide enough to hold its name (largest populations first)
+    if (al.communeA > 0.5 && k >= 7 && visCommunes.length) {
+      const cand = visCommunes.slice().sort((p, q) => COM.pop[q.ci] - COM.pop[p.ci]);
+      let n = 0;
+      for (const v of cand) {
+        if (n >= 220) break;
+        if (v.x1 - v.x0 < 36 || v.y1 - v.y0 < 14) continue;
+        const nm = COM.names[v.ci];
+        if (v.x1 - v.x0 < textW(ctx, FONT.commune, nm) + 8) continue;
+        const p = projection([COM.lon[v.ci], COM.lat[v.ci]]);
+        if (put('commune', nm, bx + a * p[0], by + a * p[1], { commune: v.ci })) n++;
+      }
+    }
     // 6. sea and neighbouring countries (context)
     if (k < 4) contextXY.forEach((c) => put(c.kind, c.text, bx + a * c.x, by + a * c.y));
     labelItems = items;
@@ -98,7 +111,7 @@
     const ctx = $('label-canvas').getContext('2d');
     ctx.clearRect(0, 0, base.w, base.h);
     ctx.lineJoin = 'round'; ctx.textBaseline = 'middle';
-    const colour = { region: '#33402d', dept: '#4a3f2c', townBig: '#1f1a12', town: '#2b2217', site: '#6b3d08', sea: '#5f7d92', land: '#79858c' };
+    const colour = { region: '#33402d', dept: '#4a3f2c', townBig: '#1f1a12', town: '#2b2217', commune: '#3b3426', site: '#6b3d08', sea: '#5f7d92', land: '#79858c' };
     for (const it of labelItems) {
       ctx.font = FONT[it.kind];
       if ('letterSpacing' in ctx) ctx.letterSpacing = it.kind === 'region' ? '1.2px' : '0px';
@@ -120,6 +133,8 @@
       ctx.beginPath(); ctx.moveTo(bx + a * cellPX[o], by + a * cellPY[o]);
       for (let v = 1; v < 6; v++) ctx.lineTo(bx + a * cellPX[o + v], by + a * cellPY[o + v]);
       ctx.closePath(); ctx.stroke();
+    } else if (hover.type === 'commune') {
+      strokeCommune(ctx, hover.ci);
     } else if (hover.type === 'dept') {
       const k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy, c = deptCentroid[hover.fi];
       ctx.font = '700 13px system-ui, sans-serif'; ctx.textAlign = 'center';

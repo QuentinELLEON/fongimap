@@ -7,6 +7,10 @@
     },
     updateAll, resetAll, pickCommune, setYearRange, setLayerMode, openSpecies, pickSpecies, flyTo, scanSpecies, applyStarter, STARTERS,
     get engine() { return engine; }, serializeState,
+    drawLayers, get geoState() { return geoState; },
+    timeDraw(n) {                              // mean duration of a full layer redraw at the current view (ms)
+      const t0 = performance.now(); for (let i = 0; i < (n || 5); i++) { labelKey = ''; drawLayers(); } return (performance.now() - t0) / (n || 5);
+    },
     get clusters() { return clusters; }, get labels() { return labelItems; }, get browser() { return BR; },
     get transform() { return tf; },
   };

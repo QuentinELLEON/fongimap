@@ -40,6 +40,8 @@
         return true;
       }
     }
+    const al2 = layerAlphas();
+    if (al2.communeA > 0.5 && al2.dotA < 0.6) { const ci = communeAt(mx, my); if (ci >= 0) { pickCommune(ci); return true; } }
     return false;
   }
   // choose a commune (again = clear): filter on it and fly to its places
@@ -48,10 +50,14 @@
     if (state.commune === ci) state.commune = -1;
     else {
       state.commune = ci;
+      const cbx = communeBox(ci);
+      if (cbx) flyToBox(cbx, 3);
+      else {
       let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
       for (let k = 0; k < nSites; k++) if (siteCommune[k] === ci) { x0 = Math.min(x0, sitePX[k]); x1 = Math.max(x1, sitePX[k]); y0 = Math.min(y0, sitePY[k]); y1 = Math.max(y1, sitePY[k]); }
       const p = projection([COM.lon[ci], COM.lat[ci]]);
       flyToBox([Math.min(x0, p[0]), Math.min(y0, p[1]), Math.max(x1, p[0]), Math.max(y1, p[1])], 4);
+      }
     }
     scheduleUpdate();
   }
@@ -74,7 +80,11 @@
         return;
       }
     }
-    if (al.gridA > 0.35 && al.dotA < 0.35 && cellTree) {
+    if (al.communeA > 0.5 && al.dotA < 0.6) {
+      const ci = communeAt(mx, my);
+      if (ci >= 0) { $('map-svg').style.cursor = 'pointer'; setHover({ type: 'commune', id: ci, ci }); showCommuneTip(ci, mx, my); return; }
+    }
+    if (al.gridA > 0.35 && al.dotA < 0.35 && al.communeA < 0.5 && cellTree) {
       const c = cellTree.find(vx, vy, cellSize);
       if (c !== undefined && cellTarget[c] >= 1) {
         const o = c * 6, poly = [0, 1, 2, 3, 4, 5].map((v) => [cellPX[o + v], cellPY[o + v]]);
@@ -109,7 +119,7 @@
     engine.topWhere(spec, 3).then((r) => { if (tok !== tipTok) return; tipCache.set(key, r); if (tipKey === key) render(r); });
   }
   const topPending = '<span class="muted">…</span>';
-  function listHtml(top) { return top.map((t) => dotHtml(ediOf[t[0]]) + '<em>' + esc(DICT.species[t[0]]) + '</em> ' + fmt(t[1])).join('<br>'); }
+  function listHtml(top) { return top.map((t) => dotHtml(ediOf[t[0]]) + '<span title="' + esc(latinName(t[0])) + '">' + nameHtml(t[0]) + '</span> ' + fmt(t[1])).join('<br>'); }
 
   function showDeptTip(d, mx, my) {
     const fi = DEPTS.features.indexOf(d), di = featDept[fi];
@@ -121,7 +131,7 @@
     let tot = 0; for (let k = 0; k < agg.byDept.length; k++) tot += agg.byDept[k];
     withTop('d' + di, { kind: 'dept', di }, (det) => {
       out(head + fmt(c) + ' observations <span class="muted">(' + (100 * c / tot).toFixed(1).replace('.', ',') + ' % · ' + fmtVal(c / (deptArea[fi] / 100)) + ' / 100 km²)</span><br>' +
-        (det ? fmt(det.distinct) + ' espèces distinctes<br>' + listHtml(det.top) + (det.guild >= 0 ? '<br><span class="muted">Guilde dominante :</span> ' + esc(DICT.guild[det.guild]) : '') : topPending) +
+        (det ? fmt(det.distinct) + ' espèces distinctes<br>' + listHtml(det.top) + (det.guild >= 0 ? '<br><span class="muted">Guilde dominante :</span> ' + esc(guildFr(DICT.guild[det.guild])) : '') : topPending) +
         '<br><span class="muted">Clic : filtrer · double-clic : zoomer</span>');
     });
   }

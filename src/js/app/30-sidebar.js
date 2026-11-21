@@ -11,7 +11,7 @@
   // groups of dictionary indices shown as one chip: first nTop values, "Autres", optional "non renseigné"
   function makeGroups(dictName, nTop, colourFn, withMissing) {
     const L = DICT[dictName].length, out = [];
-    for (let i = 0; i < Math.min(nTop, L); i++) out.push({ label: DICT[dictName][i], colour: colourFn(i), idx: [i] });
+    for (let i = 0; i < Math.min(nTop, L); i++) out.push({ label: dictLabel(dictName, DICT[dictName][i]), colour: colourFn(i), idx: [i] });
     if (L > nTop) out.push({ label: 'Autres', colour: COL_OTHER, idx: d3.range(nTop, L) });
     if (withMissing) out.push({ label: 'Non renseigné', colour: COL_NA, idx: [MISSING] });
     return out;
@@ -152,7 +152,7 @@
   // choose one species: filter on it, fly to its distribution and open its sheet; choosing it again clears
   function pickSpecies(idx) {
     if (state.speciesSet.size === 1 && state.speciesSet.has(idx)) { clearSpecies(); closeDrawer(); }
-    else { setSpecies([idx], DICT.species[idx]); openSpecies(idx, true); }
+    else { setSpecies([idx], displayName(idx)); openSpecies(idx, true); }
     scheduleUpdate();
   }
 

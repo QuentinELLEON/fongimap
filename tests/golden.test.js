@@ -52,6 +52,7 @@ test('engine reproduces the golden counters', { skip: !have && 'data.js not buil
 
   const scenarios = JSON.parse(fs.readFileSync(path.join(__dirname, 'golden/scenarios.json'), 'utf8'));
   const baseline = JSON.parse(fs.readFileSync(path.join(__dirname, 'golden/baseline.json'), 'utf8'));
+  const diffs = [];
   for (const s of scenarios) {
     const st = { speciesSet: [], phylumSet: [], guildSet: [], trophicSet: [], ecoregionSet: [], monthSet: s.months || [], deptSet: [], yearMin: s.yearMin || 0, yearMax: s.yearMax || 0, edible: s.edible || 0, commune: -1 };
     (s.species || []).forEach((n) => st.speciesSet.push(D.species.indexOf(n)));
@@ -65,6 +66,7 @@ test('engine reproduces the golden counters', { skip: !have && 'data.js not buil
     let sitesOn = 0, sitesSum = 0; for (const v of a.siteCount) if (v > 0) { sitesOn++; sitesSum += v; }
     let deptsSum = 0; for (const v of a.byDept) deptsSum += v;
     const got = { total: a.total, nSpecies: a.nSpecies, nDepts: a.nDepts, gps: a.gps, sitesOn, sitesSum, deptsSum, top5: top.slice(0, 5).map((t) => [D.species[t[0]] === undefined ? null : D.species[t[0]], t[1]]) };
-    assert.deepStrictEqual(got, baseline[s.id], 'scenario ' + s.id);
+    try { assert.deepStrictEqual(got, baseline[s.id]); } catch (e) { diffs.push(s.id + ': ' + JSON.stringify(got)); }
   }
+  assert.deepStrictEqual(diffs, [], 'scenarios that differ from tests/golden/baseline.json');
 });

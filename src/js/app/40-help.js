@@ -40,7 +40,7 @@
     if (o.months) o.months.forEach((m) => state.monthSet.add(m));
     if (o.edible) state.edible = o.edible;
     if (o.genus) { const g = genusIdx(o.genus); if (g.length) setSpecies(g, 'genre ' + o.genus + ' (' + fmt(g.length) + ' espèces)'); }
-    if (o.pick !== undefined && o.pick >= 0) { setSpecies([o.pick], DICT.species[o.pick]); openSpecies(o.pick, true); }
+    if (o.pick !== undefined && o.pick >= 0) { setSpecies([o.pick], displayName(o.pick)); openSpecies(o.pick, true); }
     else mapSvg.transition().duration(DUR || 1).call(zoom.transform, d3.zoomIdentity);
     updateAll();
   }

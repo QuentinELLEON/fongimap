@@ -67,7 +67,8 @@
       $('drawer-body').innerHTML =
         '<figure class="dr-photo">' + img + '<figcaption>' + (info.imageUrl ? 'Photo' : 'Photo à venir') + '</figcaption></figure>' +
         '<div class="dr-body">' +
-        '<div><div class="dr-title">' + esc(info.name) + '</div><div class="dr-tax">' + esc(tax) + '</div></div>' +
+        '<div><div class="dr-title' + (showsFrench(idx) ? '' : ' latin') + '">' + esc(displayName(idx)) + '</div>' + (showsFrench(idx) ? '<div class="dr-latin">' + esc(info.name) + '</div>' : '') +
+        (aliasesOf(idx).length ? '<div class="dr-alias">Aussi appelé : ' + esc(aliasesOf(idx).join(', ')) + '</div>' : '') + '<div class="dr-tax">' + esc(tax) + '</div></div>' +
         '<div class="dr-edi" style="--edi:' + E.colour + '"><span style="font-size:20px">' + E.icon + '</span><div><b>' + esc(E.label) + '</b>' +
         (note ? esc(note) : (e === 0 ? 'Aucune information de comestibilité dans la base embarquée.' : '')) +
         '<small>Information indicative et non validée : ne jamais consommer un champignon sur la seule base de cette application ; faites-le contrôler par un pharmacien ou une société mycologique.</small></div></div>' +
@@ -79,7 +80,7 @@
         '<div class="dr-fig"><b>' + info.nDepts + '</b><span>départements</span></div></div>' +
         '<div class="dr-sec">Saisonnalité</div><div id="dr-months"></div>' +
         '<div class="dr-sec">Départements les plus riches</div><div id="dr-depts"></div>' +
-        (info.guild ? '<div class="dr-sec">Guilde</div><div>' + esc(info.guild) + '</div>' : '') +
+        (info.guild ? '<div class="dr-sec">Guilde</div><div>' + esc(guildFr(info.guild)) + '</div>' : '') +
         '<div class="dr-actions">' +
         (info.bbox ? '<button class="primary" id="dr-fly">Voir sur la carte</button>' : '') +
         '<a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/' + encodeURIComponent(info.name.replace(/ /g, '_')) + '">Wikipédia ↗</a>' +
