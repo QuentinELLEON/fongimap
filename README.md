@@ -134,7 +134,7 @@ Le format binaire (18 octets/enregistrement) est documenté en tête de `build.p
 python tools/fetch_raw.py --what all   # télécharge le CSV FongiBase et les limites communales IGN, vérifie les SHA-256
 python build.py                        # data.js + geo-communes.js + datasets.js (~40 s)
 python assemble_html.py                # index.html
-node --test tests/                     # 14 tests : moteur (golden master), recherche, URL, chunks, moteur distant
+node --test "tests/*.test.js"                     # 14 tests : moteur (golden master), recherche, URL, chunks, moteur distant
 node tools/bench_engine.js             # mesures de performance (voir specs/performance.md)
 ```
 

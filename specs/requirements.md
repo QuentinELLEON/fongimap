@@ -27,7 +27,7 @@ Replaces v1.0 (kept in `history/requirements-v1.md`). These requirements describ
 | NFR-3 Size | `index.html` ≈ 0.9 MB; `data.js` 9.4 MB (limit 12 MB); commune geometry 2.2 MB loaded lazily. | build log |
 | NFR-4 Browsers | Chrome / Edge / Firefox current. Safari and Firefox are untested here; the Worker may be unavailable on `file://` (automatic fallback). | not verified |
 | NFR-5 Build | `python build.py && python assemble_html.py` with Python 3.9+, pandas, numpy only; raw inputs fetched by `tools/fetch_raw.py` with SHA-256 verification; geometry work in `pipeline/` (numpy only); outputs deterministic. | build log |
-| NFR-6 Quality | `node --test tests/` (engine golden master, search, URL state, chunk loading, remote engine) must pass; counters of the real data must not change unexplained (anchors in `CLAUDE.md`). | CI |
+| NFR-6 Quality | `node --test "tests/*.test.js"` (engine golden master, search, URL state, chunk loading, remote engine) must pass; counters of the real data must not change unexplained (anchors in `CLAUDE.md`). | CI |
 | NFR-7 Accessibility | Interactive elements are focusable buttons; the map is keyboard-operable; result counts are announced; text contrast ≥ 4.5:1 on the light theme; targets ≥ 24 px where practical. | manual (axe-core not run) |
 | NFR-8 Privacy | No tracking, no network call; imported datasets never store observer names. | review |
 

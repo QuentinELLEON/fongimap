@@ -275,7 +275,7 @@ plus an architectural constraint: the app is one `index.html` for ease, a server
 
 ## 9. Implementation of the five issues (21 November 2026)
 
-All five issues were implemented on branch `integration/cartographers-feedback` (one branch per issue merged with `--no-ff`; nothing merged into `main`). Verification: 14 Node tests (`node --test tests/`), the 20 golden scenarios run in the real page in worker and main-thread modes, and manual checks in the in-app browser. Measurements: `specs/performance.md`.
+All five issues were implemented on branch `integration/cartographers-feedback` (one branch per issue merged with `--no-ff`; nothing merged into `main`). Verification: 14 Node tests (`node --test "tests/*.test.js"`), the 20 golden scenarios run in the real page in worker and main-thread modes, and manual checks in the in-app browser. Measurements: `specs/performance.md`.
 
 **#5 Foundation.** `app.js` split into `src/js/app/*.js` (concatenated in order in one IIFE); the record engine (`src/js/core/engine.js`) is DOM-free and runs in a Web Worker (Blob, automatic fallback to the main thread, `?worker=0` forces it) behind a promise client (`engine-client.js`); the UI no longer touches per-record arrays. Golden baseline recorded from the original app before the refactor (`tests/golden/`). `tools/fetch_raw.py` (SHA-256 verified), `build/VENDOR.md`, CI workflow. **Not done:** a separate `geo` / `taxa` package split with canonical keys (only the commune geometry is a separate lazily loaded package, `geo-communes.js`); `esbuild`; reorganising folders; rewriting `requirements.md` / `design.md` v2.
 
