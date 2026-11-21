@@ -52,12 +52,16 @@
       initBrowser();
       initDrawer();
       initHelp();
+      initUI();
 
       setLoading('Premier rendu…', 90); await tick();
       await updateAll(true);
+      const fromHash = applyHash(location.hash);        // a shared link restores its filters and view
+      if (fromHash) await updateAll();
+      bootDone = true;
       setLoading('Prêt', 100);
       $('loading-overlay').classList.add('hidden');
-      maybeShowHelp();
+      if (!fromHash) maybeShowHelp();
     } catch (err) {
       console.error(err);
       showError(String(err && err.message ? err.message : err));

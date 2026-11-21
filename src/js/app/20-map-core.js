@@ -49,6 +49,7 @@
       gZoom.attr('transform', tf);
       hideTip();
       requestDraw();
+      scheduleHash();
     });
     mapSvg.call(zoom).on('dblclick.zoom', null);
     mapSvg.on('mousemove', onMapMove).on('mouseleave', hideTip).on('click', (e) => { if (!(e.target.classList && e.target.classList.contains('dept-path'))) onMapClick(e); });
@@ -78,7 +79,7 @@
   function setLayerMode(m) {
     layerMode = m;
     document.querySelectorAll('#seg-layer button').forEach((b) => b.classList.toggle('on', b.dataset.v === m));
-    requestDraw();
+    requestDraw(); scheduleHash();
   }
 
   // fit the virtual 1000x1000 map box into the container; size canvases

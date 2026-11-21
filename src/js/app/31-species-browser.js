@@ -107,7 +107,7 @@
     sel.style('top', (d) => d.rank * ROW_H + 'px')
       .classed('sel', (d) => state.speciesSet.has(d.idx)).attr('aria-pressed', (d) => state.speciesSet.has(d.idx))
       .attr('title', (d) => d.name + (d.fr ? ' (' + d.latin + ')' : '') + ' — ' + EDI[d.edi].label).attr('aria-label', (d) => d.name + (d.fr ? ', ' + d.latin : '') + ', ' + fmt(d.n) + ' observations, ' + EDI[d.edi].label);
-    sel.select('.sp-badge').style('background', (d) => EDI[d.edi].colour).style('color', (d) => (d.edi === 0 ? '#5a4e3a' : '#fff')).select('i').text((d) => EDI[d.edi].icon);
+    sel.select('.sp-badge').style('background', (d) => EDI[d.edi].colour).style('color', (d) => EDI[d.edi].ink).select('i').text((d) => EDI[d.edi].icon);
     sel.select('.sp-name').classed('latin', (d) => !d.fr).text((d) => d.name);
     sel.select('.sp-fam').html((d) => (d.fr ? '<i>' + esc(d.latin) + '</i>' : '') + (d.fr && d.fam ? ' · ' : '') + esc(d.fam) + (d.hint ? ' · ' + esc(d.hint) : ''));
     sel.select('.sp-n').each(function (d) { tweenNumber(this, d.n); });

@@ -102,6 +102,7 @@
     </aside>
 
     <div id="content">
+      <div id="filter-bar" class="hidden" role="group" aria-label="Filtres actifs"></div>
       <div id="map-panel">
         <div id="map-container">
           <svg id="map-svg"></svg>
@@ -133,6 +134,7 @@
                   <option value="rarefied">Richesse raréfiée (100 obs.)</option>
                 </select>
               </label>
+              <div class="opt-row"><span>Partager et exporter</span><div class="opt-actions"><button type="button" id="btn-copylink">Copier le lien</button><button type="button" id="btn-png" title="Image de la carte avec légende et sources">Image PNG</button><button type="button" id="btn-csv" title="Liste des espèces de la vue, en CSV">Liste CSV</button></div></div>
               <label class="opt-row chk" title="Décocher pour ne garder que les vrais points GPS"><input type="checkbox" id="chk-approx" checked> Afficher les positions approximatives (centre de commune)</label>
             </div>
           </div>
@@ -193,6 +195,7 @@
     </div>
   </div>
 
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
   <div id="loading-overlay">
     <div class="loading-box">
       <span class="logo-big">🍄</span>

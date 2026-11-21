@@ -47,6 +47,7 @@
     updateMap(agg);
     renderBrowser(agg);
     syncUI();
+    liveAnnounce(agg); scheduleHash();
     startSiteAnim(first);
     const t3 = performance.now();
     perf.filter = res.ms.filter; perf.aggregate = res.ms.aggregate; perf.render = t3 - t1; perf.total = t3 - t0;
