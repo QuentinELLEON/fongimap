@@ -1,0 +1,22 @@
+[
+ {"id":"none"},
+ {"id":"cepe","species":["Boletus edulis"]},
+ {"id":"phalloides","species":["Amanita phalloides"]},
+ {"id":"girolle-oct","species":["Cantharellus cibarius"],"months":[10]},
+ {"id":"month-10","months":[10]},
+ {"id":"months-3-4-5","months":[3,4,5]},
+ {"id":"dept-39","depts":["39"]},
+ {"id":"dept-62-2A","depts":["62","2A"]},
+ {"id":"years-2000-2021","yearMin":2000,"yearMax":2021},
+ {"id":"years-1900-1950","yearMin":1900,"yearMax":1950},
+ {"id":"edible","edible":1},
+ {"id":"toxic","edible":2},
+ {"id":"edible-oct-jura","edible":1,"months":[10],"depts":["39"]},
+ {"id":"cepe-jura-2010","species":["Boletus edulis"],"depts":["39"],"yearMin":2010,"yearMax":2021},
+ {"id":"phylum-asco","phylum":["Ascomycota"]},
+ {"id":"guild-0","guildRank":[0]},
+ {"id":"guild-0-1-oct","guildRank":[0,1],"months":[10]},
+ {"id":"valbonne","commune":["Valbonne","06"]},
+ {"id":"valbonne-oct","commune":["Valbonne","06"],"months":[10]},
+ {"id":"all-combined","species":["Boletus edulis","Amanita phalloides"],"months":[9,10,11],"depts":["39","25"],"yearMin":1990,"yearMax":2021,"edible":0}
+]

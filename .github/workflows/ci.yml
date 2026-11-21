@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Python scripts compile
+        run: python -m compileall -q build.py assemble_html.py tools
+      - name: Assemble index.html
+        run: python assemble_html.py --out "$RUNNER_TEMP/dist" && ls -l "$RUNNER_TEMP/dist"
+      - name: Node tests (core engine golden master, search, geometry decoding)
+        run: node --test tests/
