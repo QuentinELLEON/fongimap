@@ -1,1 +1,19 @@
 data_raw/DATA_Gautier et al 2022.csv
+
+# python caches
+__pycache__/
+*.pyc
+
+# generated test data and reports
+test_data/
+build_reports/
+dist/
+
+# raw downloads (large, fetched by script, checksum recorded in specs/architecture.md)
+data_raw/*.csv
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,3 +1,5 @@
+> **HISTORICAL — v1.0 (Nov 2026).** The binary record format (§2.2) is still accurate. The UI layout (§4), frontend architecture (§3), file structure (§6) and open questions (§7) are **superseded**: bottom charts, GPS-dot subsample and screen-space hexbin were removed or replaced (see `context.md` §7.2–7.7). Target architecture: [`architecture.md`](architecture.md).
+
 # FongiMap — Design Document
 
 **Version:** 1.0  

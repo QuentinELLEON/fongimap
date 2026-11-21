@@ -1,3 +1,5 @@
+> **HISTORICAL — v1.0 (Nov 2026).** All phases here are done or obsolete (e.g. "CSV pending" — the real CSV was built, see `context.md` §7.1). Current planned work: [`roadmap.md`](roadmap.md).
+
 # FongiMap — Implementation Tasks
 
 **Version:** 1.0  
