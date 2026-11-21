@@ -8,6 +8,7 @@ Replaces v1.0 (kept in `history/requirements-v1.md`). These requirements describ
 |---|---|---|
 | FR-1 Data | The page loads one dataset at a time from classic `<script>` files next to `index.html` (`data.js`, or `data-<id>.js` chosen by `?ds=<id>`); a registry `datasets.js` feeds the dataset selector. Datasets may be split into period chunks loaded newest first and appended in the background. | `tests/chunks.test.js`; manual (`?ds=…`) |
 | FR-2 Map levels | Semantic zoom: départements → 10 km hexagons → communes (polygons, coloured) → graduated places; borders have a hierarchy (commune < département < région < coast); names appear as they fit. | manual |
+| FR-2b IGN overlays | At the last zoom levels two **independent, switchable** online layers are drawn over the colour code: forest delimitation (IGN forest mask 2021-2023) and altitude (contour lines every 20 or 50 m with bold labelled lines every 5th, summits and passes with their altitude, computed from IGN RGE ALTI). Defaults: both on; the choice is remembered and shared in the URL (`fo=0`, `al=0`). | `tests/contour.test.js`; manual |
 | FR-3 Colour measures | Départements: observations per 100 km² (default), total, distinct species, rarefied richness; communes: density or total; classes by quantiles with rounded, published breaks; one legend for the dominant layer. | manual |
 | FR-4 Filters | Species (set), period, months, département(s), commune, guild, phylum, trophic mode, ecoregion, edibility (all / edible / toxic); combined with AND; cross-filtering (the species list ignores only the species filter, départements only the département filter); one bar shows every active filter. | `tests/golden.test.js` (20 scenarios) |
 | FR-5 Species browser | Search in French names, aliases, Latin names and families (accent-, ligature-, hyphen- and plural-tolerant, type-ahead, ranked); sort by observations or A→Z by displayed name; French or Latin first (persisted); preview on hover; species sheet with seasonality, richest départements, edibility, links (Wikipedia, GBIF, INPN when a TAXREF code exists). | `tests/search.test.js`; manual |
@@ -22,7 +23,7 @@ Replaces v1.0 (kept in `history/requirements-v1.md`). These requirements describ
 
 | ID | Requirement | Measured |
 |---|---|---|
-| NFR-1 Offline | Opens by double-click from `file://`, no network at runtime (no CDN, fonts, tiles, icons). Classic scripts only (no ES modules, no `fetch` of local files); `localStorage` always in `try/catch`. | architecture.md §6 |
+| NFR-1 Offline | (Exception: the optional IGN overlays, FR-2b, which need a connection and are absent otherwise.) Opens by double-click from `file://`, no network at runtime (no CDN, fonts, tiles, icons). Classic scripts only (no ES modules, no `fetch` of local files); `localStorage` always in `try/catch`. | architecture.md §6 |
 | NFR-2 Performance | Filtering and aggregation ≤ 50 ms for 1 M records and ≤ 100 ms for 5 M, off the main thread (Web Worker; main-thread fallback). A full layer redraw with the commune layer visible ≤ 10 ms. | `specs/performance.md` |
 | NFR-3 Size | `index.html` ≈ 0.9 MB; `data.js` 9.4 MB (limit 12 MB); commune geometry 2.2 MB loaded lazily. | build log |
 | NFR-4 Browsers | Chrome / Edge / Firefox current. Safari and Firefox are untested here; the Worker may be unavailable on `file://` (automatic fallback). | not verified |

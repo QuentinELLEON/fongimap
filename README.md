@@ -134,12 +134,13 @@ Le format binaire (18 octets/enregistrement) est documenté en tête de `build.p
 python tools/fetch_raw.py --what all   # télécharge le CSV FongiBase et les limites communales IGN, vérifie les SHA-256
 python build.py                        # data.js + geo-communes.js + datasets.js (~40 s)
 python assemble_html.py                # index.html
-node --test "tests/*.test.js"                     # 14 tests : moteur (golden master), recherche, URL, chunks, moteur distant
+node --test "tests/*.test.js"                     # 18 tests : moteur (golden master), recherche, URL, chunks, moteur distant, courbes de niveau
 node tools/bench_engine.js             # mesures de performance (voir specs/performance.md)
 ```
 
 - **Noms français** : `tools/prepare_vernacular.py` (TAXREF v18 puis Wikidata) produit `data_processed/vernacular_fr.csv` ; corrections humaines dans `data_processed/vernacular_overrides.csv` (`species,name_fr,status`). La recherche accepte français et latin (sans accents, pluriels, ligatures).
 - **Communes** : polygones IGN ADMIN-EXPRESS COG PLUS 2025 (Licence Ouverte), `pipeline/communes.py`. Au zoom, départements → hexagones → communes colorées → lieux. Champ « Aller à une commune » sur la carte.
+- **Forêts et altitudes (IGN, en ligne)** : aux derniers niveaux de zoom (k ≥ ~50), délimitation des forêts (masque forêt IGN 2021-2023), courbes de niveau calculées à partir de RGE ALTI (gras tous les 100 m, étiquetées), sommets et cols avec leur altitude. Deux interrupteurs indépendants dans ⚙ Options (`fo=0` / `al=0` dans le lien) ; sans connexion, ces couches sont simplement absentes.
 - **Lien partageable** : l'état (filtres, vue, niveau) est dans l'adresse (`#sp=Boletus%20edulis&m=9,10&v=5.7,46.7,6`). Exports PNG / CSV dans ⚙ Options.
 - **Plusieurs jeux de données** : `python build.py --csv autre.csv --dataset-id mon_jeu --title "…" --credit "…" --licence "…" [--chunks 4] [--synthetic]` produit `data-mon_jeu.js` (et ses morceaux) ; le sélecteur de l'en-tête (ou `index.html?ds=mon_jeu`) change de jeu. Avec `--chunks`, les périodes récentes se chargent d'abord, les anciennes en arrière-plan.
 - **Moteur** : `src/js/core/` (sans DOM, testé sous Node) tourne dans un Web Worker ; `?worker=0` force le fil principal. Un moteur distant (`tools/serve_remote.js`) montre le contrat HTTP d'un futur serveur.

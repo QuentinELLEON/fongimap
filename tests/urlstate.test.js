@@ -13,7 +13,7 @@ const plain = (o) => JSON.parse(JSON.stringify(o));
 test('round trip keeps every field', () => {
   const m = Object.assign(plain(core.defaultViewState()), {
     sp: ['Boletus edulis', 'Amanita phalloides'], m: [9, 10], d: ['39', '2A'], y: [2000, 2021], c: '06152', e: 1,
-    g: ['Ectomycorrhizal'], ph: ['Ascomycota'], v: [5.7, 46.7, 6], l: 'communes', mt: 'count', n: 'latin',
+    g: ['Ectomycorrhizal'], ph: ['Ascomycota'], v: [5.7, 46.7, 6], l: 'communes', mt: 'count', n: 'latin', fo: 0, al: 0,
   });
   const str = core.encodeState(m);
   assert.ok(!str.includes(' '), 'no raw spaces');
