@@ -46,7 +46,7 @@
   // ── constants ─────────────────────────────────────────────────────────────
   const REC = 18;
   const SP_MISSING = 0xFFFE, MISSING = 0xFF, COORD_MISSING = 0xFFFF, Q_MAX = 65534;
-  const YEAR_LO = 1900, YEAR_HI = 2021;
+  let YEAR_LO = 1900, YEAR_HI = 2021;      // period slider range: set from META.year_range at boot
   const VIRT = 1000;                         // virtual map box the projection is fitted to
   const RARE_N = 100;                        // rarefaction sample size (Hurlbert)
   const EARTH_R_KM = 6371.0088;
@@ -57,7 +57,7 @@
   // 10 km grid cells (equal area -> count = density -> lightness ramp): 1-9, 10-49, 50-199, 200-999, 1000+
   const CELL_CUTS = [10, 50, 200, 1000], CELL_LABELS = ['1 – 9', '10 – 49', '50 – 199', '200 – 999', '1 000 et plus'];
   const cellClass = (w) => (w >= 1000 ? 4 : w >= 200 ? 3 : w >= 50 ? 2 : w >= 10 ? 1 : 0);
-  const MONTHS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+  let MONTHS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
   // failure bits
   const F_SPECIES = 1, F_PHYLUM = 2, F_GUILD = 4, F_TROPHIC = 8, F_ECO = 16, F_YEAR = 32, F_MONTH = 64, F_DEPT = 128, F_EDIBLE = 256, F_COMMUNE = 512;
   const TABLEAU = d3.schemeTableau10;
@@ -79,7 +79,7 @@
   EDI.forEach((e) => { e.ink = e.colour === '#7a1b12' ? '#ffffff' : '#1d160c'; });   // text colour with contrast >= 4.5:1 on the badge colour
 
   const $ = (id) => document.getElementById(id);
-  const fmt = (n) => Number(n).toLocaleString('fr-FR');
+  const fmt = (n) => Number(n).toLocaleString(LANG === 'en' ? 'en-GB' : 'fr-FR');
     const tick = () => new Promise((r) => setTimeout(r, 15));
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);

@@ -18,4 +18,4 @@ jobs:
       - name: Assemble index.html
         run: python assemble_html.py --out "$RUNNER_TEMP/dist" && ls -l "$RUNNER_TEMP/dist"
       - name: Node tests (core engine golden master, search, geometry decoding)
-        run: node --test tests/
+        run: node --test "tests/*.test.js"

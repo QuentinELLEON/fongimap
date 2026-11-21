@@ -194,3 +194,21 @@ Moves happen in steps (`plans/architecture-foundation.md` §5); nothing is reloc
 6. Columnar v2 + worker, then **second dataset** (regime A → B → C).
 
 Rough dependency graph: `foundation 2–6` → `dynamic-dataset`; all others independent.
+
+---
+
+## 9. Implementation status and revised decisions (21 November 2026)
+
+| ADR | Outcome |
+|---|---|
+| ADR-1 static-first, server-optional | **Implemented** as an engine client with three back-ends (worker, main thread, remote HTTP) and `?ds=` dataset loading by classic `<script>`. A separate `HttpSource` for `.bin` files turned out to be unnecessary: script injection works on `file://` **and** over HTTP, so there is one delivery path and no "standalone vs web" split. |
+| ADR-2 columnar format v2 | **Rejected by measurement** (`performance.md`: +3 % size, decode gain ≤ 100 ms once, in the worker). The v1 18-byte format stays; `format` is still not versioned in a header (known gap). |
+| ADR-3 canonical keys | **Partly**: INSEE codes in the commune table, TAXREF `cd_ref` per species in `META.cdref` (11 615 of 11 618 species; used for the INPN link and the CSV export; 952 of 1 219 for the GBIF dataset via FongiBase names). Not done: a shared taxa table across datasets and a shared hexagon id. |
+| ADR-4 admin geometry from the commune topology | **Partly**: the commune layer and its borders come from the IGN topology; départements/régions at low zoom and the land mask still use the older GeoJSON. |
+| ADR-5 artefacts out of git | **Not adopted on purpose**: `index.html`, `data.js`, `geo-communes.js` and the GBIF dataset stay committed so that a checkout or a zip opens by double-click; CI checks the build and tests but does not publish. Revisit if the repository size becomes a problem. |
+| ADR-6 esbuild | **Not adopted**: no need appeared (concatenation + tests are enough; D3 tree-shaking would save ≈ 150 KB). |
+| ADR-7 engine in a Worker with fallback | **Implemented**; behaviour on `file://` per browser still to be verified. |
+| ADR-8 bounded aggregates over HTTP | **Implemented** as `engine-remote.js` + `tools/serve_remote.js`, tested against the local engine. |
+| ADR-9 prepare scripts with committed outputs | **Done for vernacular names**; commune geometry is built inside `build.py` through `pipeline/communes.py` (numpy only) from a checksum-verified raw input instead. |
+
+Repository layout: **not reorganised** (the documented commands and paths are unchanged); the target layout of §4.6 remains a direction, not a requirement. Findings A1 (stale specs), A2 (no seam between data, engine and view), A3 (data interface), A4 (unversioned format: still open), A8 (LFS leftovers), A12 (no tests: fixed), A13 (hard-coded strings: English via phrase translation, not extraction) and A14 (accessibility) were addressed to the degree described in `context.md` §9–11.

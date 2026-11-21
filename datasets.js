@@ -11,5 +11,17 @@ window.FMAP_DATASETS = [
   "records": 1043262,
   "mode": "embedded",
   "synthetic": false
+ },
+ {
+  "id": "gbif_fr_recent",
+  "title": "GBIF — champignons de France depuis 2022",
+  "file": "data-gbif_fr_recent.js",
+  "source": "https://www.gbif.org/occurrence/search?country=FR&taxon_key=5",
+  "licence": "CC0 / CC-BY 4.0",
+  "credit": "GBIF.org, occurrences Fungi France 2022-2026, macromycètes (lichens exclus), CC0 / CC-BY 4.0, incertitude de position ≤ 1 km ; extrait du 2026-11-21 (iNaturalist, CardObs, Observation.org…)",
+  "updated": "2026-11-21",
+  "records": 7914,
+  "mode": "chunked",
+  "synthetic": false
  }
 ];

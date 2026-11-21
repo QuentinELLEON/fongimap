@@ -98,6 +98,7 @@ assert DTYPE.itemsize == RECORD_SIZE
 # logical name -> CSV header (compared case-insensitively, spaces == underscores)
 WANTED = {
     "species":   "genus_species_ref",
+    "cdref":     "cd_ref",
     "family":    "family",
     "order":     "order",
     "class":     "class",
@@ -612,7 +613,7 @@ def quantise(vals, vmin, vmax, in_range):
 YEAR_VALID = (1700, 2021)   # the dataset spans 1708-2021; anything else is a typo in the source
 
 
-def parse_dates(series, keep_jan1=False):
+def parse_dates(series, keep_jan1=False, year_max=2021):
     """Extract (year, month) arrays; 0 = missing.
     A date of exactly YYYY-01-01 is the source's placeholder for "year only" (70k records,
     ~7x the real January rate), so its month is stored as unknown unless keep_jan1."""
@@ -620,7 +621,7 @@ def parse_dates(series, keep_jan1=False):
     year = pd.to_numeric(parts[0], errors="coerce")
     month = pd.to_numeric(parts[1], errors="coerce")
     day = pd.to_numeric(parts[2], errors="coerce")
-    year = year.where(year.between(*YEAR_VALID))
+    year = year.where(year.between(YEAR_VALID[0], year_max))
     month = month.where(month.between(1, 12) & year.notna())
     if not keep_jan1:
         month = month.where(~((month == 1) & (day == 1)))
@@ -697,6 +698,8 @@ def main():
     ap.add_argument("--credit", default=None, help="attribution line shown in the app and in exports")
     ap.add_argument("--updated", default=None, help="date of the last update of the source (YYYY-MM-DD)")
     ap.add_argument("--synthetic", action="store_true", help="mark the dataset as synthetic (random data: a warning is shown)")
+    ap.add_argument("--year-min", type=int, default=1900, help="first year of the period slider")
+    ap.add_argument("--year-max", type=int, default=2021, help="last valid year of the dataset (also the end of the period slider)")
     ap.add_argument("--chunks", type=int, default=1, help="split the records by period into N files loaded progressively")
     args = ap.parse_args()
 
@@ -750,7 +753,7 @@ def main():
         assert n_before - ms["records_dropped"] == int((lon_q != COORD_MISSING).sum())
 
     # ---- dates ---------------------------------------------------------------
-    year, month = parse_dates(df["date"], args.keep_jan1)
+    year, month = parse_dates(df["date"], args.keep_jan1, args.year_max)
     log("Dates: {:,} with year, {:,} with month".format(int((year > 0).sum()), int((month > 0).sum())))
 
     # ---- dictionaries --------------------------------------------------------
@@ -832,6 +835,15 @@ def main():
             log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
         communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
     e_codes, e_notes, e_gnotes = load_edibility(sp_d)
+    # canonical taxon key: the TAXREF code (cd_ref) most often attached to each species name ("" when unknown)
+    cdref = [""] * len(sp_d)
+    tmp = df[["species", "cdref"]]
+    tmp = tmp[(tmp["cdref"] != "") & tmp["species"].isin(set(sp_d))]
+    pos_sp = {name: i for i, name in enumerate(sp_d)}
+    for (name, code), _ in tmp.groupby(["species", "cdref"]).size().sort_values(ascending=False, kind="stable").items():
+        if not cdref[pos_sp[name]]:
+            cdref[pos_sp[name]] = str(code)
+    log("TAXREF codes: %s of %s species have a cd_ref" % ("{:,}".format(sum(1 for c in cdref if c)), "{:,}".format(len(sp_d))))
     vern = load_vernacular(sp_d)
     if vern:
         counts = np.bincount(sp[sp != SPECIES_MISSING], minlength=len(sp_d))
@@ -860,7 +872,9 @@ def main():
         "cells": cells,
         "places": places,
         "vernacular": vern,
+        "cdref": cdref,
         "chunks": chunks_meta or None,
+        "year_range": [args.year_min, args.year_max],
         "dataset": args.dataset_id,
         "edible": {"codes": e_codes, "notes": {str(k): v for k, v in e_notes.items()},
                    "genus_notes": e_gnotes},

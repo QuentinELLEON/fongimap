@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FongiMap — Observations fongiques de France</title>
+<script>try{var p=localStorage.getItem('fongimap-theme');var d=p==='dark'||(p!=='light'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}catch(e){}</script>
 <style>
 /*%%CSS%%*/
 </style>
@@ -30,6 +31,7 @@
         <button data-v="2" title="Espèces toxiques ou mortelles (indicatif)">☠ Toxiques</button>
       </div>
       <button id="btn-reset" title="Réinitialiser tous les filtres">↺ Réinitialiser</button>
+      <button id="btn-lang" type="button">EN</button>
       <button id="btn-help" title="À quoi sert ce site ?" aria-label="Aide : à quoi sert ce site ?">?</button>
     </div>
   </header>
@@ -137,6 +139,7 @@
                   <option value="rarefied">Richesse raréfiée (100 obs.)</option>
                 </select>
               </label>
+              <label class="opt-row">Thème <select id="sel-theme" title="Thème"><option value="auto">Automatique</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
               <div class="opt-row"><span>Partager et exporter</span><div class="opt-actions"><button type="button" id="btn-copylink">Copier le lien</button><button type="button" id="btn-png" title="Image de la carte avec légende et sources">Image PNG</button><button type="button" id="btn-csv" title="Liste des espèces de la vue, en CSV">Liste CSV</button></div></div>
               <label class="opt-row chk" title="Décocher pour ne garder que les vrais points GPS"><input type="checkbox" id="chk-approx" checked> Afficher les positions approximatives (centre de commune)</label>
             </div>

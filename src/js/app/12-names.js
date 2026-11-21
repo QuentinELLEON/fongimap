@@ -18,8 +18,8 @@
     'Saprotroph': 'Saprotrophe', 'Symbiotroph': 'Symbiotrophe', 'Pathotroph': 'Pathotrophe', 'Pathotroph-Saprotroph': 'Pathotrophe-saprotrophe',
     'Saprotroph-Symbiotroph': 'Saprotrophe-symbiotrophe', 'Pathotroph-Symbiotroph': 'Pathotrophe-symbiotrophe', 'Pathotroph-Saprotroph-Symbiotroph': 'Pathotrophe-saprotrophe-symbiotrophe',
   };
-  const guildFr = (v) => GUILD_FR[v] || v;
-  const dictLabel = (dictName, v) => (dictName === 'guild' ? guildFr(v) : dictName === 'trophic' ? (TROPHIC_FR[v] || v) : v);
+  const guildFr = (v) => (LANG === 'en' ? v : GUILD_FR[v] || v);
+  const dictLabel = (dictName, v) => (dictName === 'guild' ? guildFr(v) : dictName === 'trophic' ? (LANG === 'en' ? v : TROPHIC_FR[v] || v) : v);
 
   const NAME_KEY = 'fongimap-name-pref';
   const prefStore = {

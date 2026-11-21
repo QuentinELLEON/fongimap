@@ -35,3 +35,6 @@ Replaces `tasks.md` (historical). Each item has a GitHub issue (body = the detai
 
 ## Status (21 Nov 2026)
 All five issues have an implementation on the integration branch `integration/cartographers-feedback` (see `context.md` §9 for what was done, deviations and what is left): #3 done (coverage gap: 129 of the top-500 species still need a reviewed name), #1 done, #5 partly (engine / worker / tests / CI done; package split with canonical keys, esbuild and folder moves not done), #2 done except i18n and dark theme, #4 infrastructure done (selector, chunked progressive loading, remote contract) but no real second dataset yet: see the research PR.
+
+## Status (updated after the second round)
+#1, #2 (except axe-core and the usability test), #3 and #4 (second dataset integrated: GBIF France macrofungi since 2022) are implemented on `main`; #5 is implemented except the items listed in `architecture.md` §9 (shared taxa table, versioned header, layout reorganisation, esbuild — the last two decided against). See `context.md` §11 for the remaining list.
