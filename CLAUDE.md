@@ -20,7 +20,7 @@ Requirements: Python 3.9+, pandas, numpy; Node 22+ for the tests. Run `python to
 
 ## Hard constraints (do not break without an ADR)
 - Must work from `file://`: **no ES modules, no `fetch` of local files**, data enters through `<script>`. Classic scripts only, one IIFE. `localStorage`/IndexedDB always inside `try/catch`.
-- No network at runtime: no CDN, fonts, tiles or icons from the web.
+- No network at runtime: no CDN, fonts, tiles or icons from the web. **One declared exception** (ADR-10): the optional IGN overlays at the last zoom levels (forests, altitude), each with its own switch, which query data.geopf.fr with the displayed area; without a connection they are just absent and nothing else changes.
 - `build.py` stays `pandas + numpy` only. Heavy geometry work goes in separate `tools/prepare_*.py` scripts whose **outputs are committed** in `data_processed/` with provenance in `SOURCES.md`.
 - Never present synthetic data as real. Never claim edibility is validated: `data_processed/edibility.csv` is an indicative, hand-written table, conservative by design; the disclaimer wording in the UI is a safety feature.
 - Attribution/licence lines (FongiBase CC-BY 4.0, geo.api.gouv.fr, gregoiredavid/france-geojson) must stay in the UI footer, `data.js` header and any export.

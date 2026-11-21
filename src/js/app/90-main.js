@@ -7,6 +7,7 @@
     },
     updateAll, resetAll, pickCommune, setYearRange, setLayerMode, openSpecies, pickSpecies, flyTo, scanSpecies, applyStarter, STARTERS,
     get engine() { return engine; }, serializeState,
+    get ign() { return ign; }, ignDebug() { const h = {}; ign.tiles.forEach((v) => { const k = v.layer + ':' + v.state; h[k] = (h[k] || 0) + 1; }); return { h, running: ign.running, queue: ign.queue.length, alt: ign.altQueue.length, errors: ign.errors }; },
     drawLayers, get geoState() { return geoState; },
     timeDraw(n) {                              // mean duration of a full layer redraw at the current view (ms)
       const t0 = performance.now(); for (let i = 0; i < (n || 5); i++) { labelKey = ''; drawLayers(); } return (performance.now() - t0) / (n || 5);

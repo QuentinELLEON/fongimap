@@ -213,7 +213,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #map-container { position: absolute; inset: 0; overflow: hidden; }
 #map-svg { width: 100%; height: 100%; display: block; cursor: grab; }
 #map-svg:active { cursor: grabbing; }
-#grid-canvas, #commune-canvas, #dot-canvas, #label-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s var(--ease); }
+#grid-canvas, #commune-canvas, #ign-canvas, #dot-canvas, #label-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s var(--ease); }
 #label-canvas { opacity: 1; transition: none; }
 
 .dept-layer { transition: opacity .6s var(--ease); }
@@ -450,6 +450,15 @@ button.month-btn { font-size: 11px; }
 :root[data-theme="dark"] .chip.active, :root[data-theme="dark"] .month-btn.active, :root[data-theme="dark"] .seg button.on { background: #3a6b35; color: #fff; }
 :root[data-theme="dark"] #side-tabs button.on { color: #8fcf8c; border-bottom-color: #8fcf8c; }
 :root[data-theme="dark"] .help-card { background: var(--bg); color: var(--fg); }
+
+/* ── IGN overlays (forests, altitude) ── */
+#ign-status { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 6; background: rgba(43,34,23,.88); color: #fff; font-size: 11.5px; padding: 4px 12px; border-radius: 12px; pointer-events: none; }
+#ign-status.hidden { display: none; }
+.opt-note { font-size: 11px; color: var(--fg2); line-height: 1.35; margin: -4px 0 0 22px; }
+#map-legend ul.ign { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+#map-legend .ign-forest { background: rgba(8,96,96,.2); box-shadow: inset 0 0 0 1.5px rgba(6,74,74,.9); }
+#map-legend .ign-contour { background: linear-gradient(to bottom, transparent 40%, rgb(120,70,20) 40%, rgb(120,70,20) 60%, transparent 60%); }
+#map-legend .ign-peak { background: none; color: #3a2410; font-style: normal; font-size: 11px; text-align: center; line-height: 12px; }
 </style>
 </head>
 <body>
@@ -542,6 +551,7 @@ button.month-btn { font-size: 11px; }
         <footer id="credits">
           Données : <a href="https://zenodo.org/records/17158524" target="_blank" rel="noopener">FongiBase</a>,
           Gautier et al. 2022 — DOI&nbsp;10.5281/zenodo.17158524 — CC-BY&nbsp;4.0.<br>
+          Forêts, courbes de niveau et altitudes (couches en ligne) : IGN Géoplateforme, Licence Ouverte.<br>
           Fond de carte : gregoiredavid/france-geojson. Noms et populations des communes : geo.api.gouv.fr.<br>
           <span id="ds-credit"></span><br>
           <b>Comestibilité indicative</b> : ne jamais consommer un champignon sur la seule base de cette application.
@@ -556,10 +566,12 @@ button.month-btn { font-size: 11px; }
           <svg id="map-svg"></svg>
           <canvas id="grid-canvas"></canvas>
           <canvas id="commune-canvas"></canvas>
+          <canvas id="ign-canvas"></canvas>
           <canvas id="dot-canvas"></canvas>
           <canvas id="label-canvas"></canvas>
           <div id="map-tooltip" class="tooltip hidden"></div>
           <div id="preview-tag" class="hidden"></div>
+          <div id="ign-status" class="hidden" role="status"></div>
 
           <div id="commune-box"><input type="search" id="commune-search" placeholder="Aller à une commune…" autocomplete="off" spellcheck="false" aria-label="Aller à une commune" role="combobox" aria-expanded="false" aria-controls="commune-results"><ul id="commune-results" class="hidden" role="listbox"></ul></div>
           <div id="options-wrap">
@@ -584,6 +596,9 @@ button.month-btn { font-size: 11px; }
               </label>
               <label class="opt-row">Thème <select id="sel-theme" title="Thème"><option value="auto">Automatique</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
               <div class="opt-row"><span>Partager et exporter</span><div class="opt-actions"><button type="button" id="btn-copylink">Copier le lien</button><button type="button" id="btn-png" title="Image de la carte avec légende et sources">Image PNG</button><button type="button" id="btn-csv" title="Liste des espèces de la vue, en CSV">Liste CSV</button></div></div>
+              <label class="opt-row chk"><input type="checkbox" id="chk-forest" checked> Forêts (IGN, en ligne, aux derniers niveaux de zoom)</label>
+              <label class="opt-row chk"><input type="checkbox" id="chk-alt" checked> Altitudes : courbes de niveau, sommets et cols (IGN, en ligne)</label>
+              <p class="opt-note">Ces couches interrogent data.geopf.fr (IGN) avec la zone affichée ; hors ligne, elles sont simplement absentes.</p>
               <label class="opt-row chk" title="Décocher pour ne garder que les vrais points GPS"><input type="checkbox" id="chk-approx" checked> Afficher les positions approximatives (centre de commune)</label>
             </div>
           </div>
@@ -637,6 +652,7 @@ button.month-btn { font-size: 11px; }
       <ul class="help-small">
         <li>Données : <a href="https://zenodo.org/records/17158524" target="_blank" rel="noopener">FongiBase</a>, Gautier et al. 2022, licence CC-BY 4.0.</li>
         <li id="help-data"></li>
+        <li>Aux derniers niveaux de zoom, les <b>forêts</b> et les <b>altitudes</b> (courbes de niveau, sommets, cols) viennent de l’IGN et sont chargées <b>en ligne</b> ; chacune se désactive dans ⚙ Options de la carte.</li>
         <li>Les cartes montrent surtout <b>où les observateurs vont</b> (effort d’observation), pas l’abondance réelle des champignons.</li>
         <li>La comestibilité est <b>indicative, partielle et non validée</b> : ne jamais consommer un champignon sur la seule base de cette application ; faites-le contrôler par un pharmacien ou une société mycologique.</li>
       </ul>
@@ -1094,7 +1110,7 @@ button.month-btn { font-size: 11px; }
   const enc = (s) => encodeURIComponent(s).replace(/%7E/g, '~');
   const dec = (s) => { try { return decodeURIComponent(s); } catch (e) { return ''; } };
 
-  core.defaultViewState = () => ({ sp: [], q: '', m: [], d: [], y: null, c: '', e: 0, g: [], ph: [], tr: [], ec: [], v: null, l: 'auto', mt: 'density', n: '' });
+  core.defaultViewState = () => ({ sp: [], q: '', m: [], d: [], y: null, c: '', e: 0, g: [], ph: [], tr: [], ec: [], v: null, l: 'auto', mt: 'density', n: '', fo: 1, al: 1 });
 
   // model -> "k=v&k=v" (defaults omitted)
   core.encodeState = function (s) {
@@ -1112,6 +1128,8 @@ button.month-btn { font-size: 11px; }
     if (s.l && s.l !== D.l) out.push('l=' + enc(s.l));
     if (s.mt && s.mt !== D.mt) out.push('mt=' + enc(s.mt));
     if (s.n) out.push('n=' + enc(s.n));
+    if (s.fo === 0) out.push('fo=0');                       // IGN forest / altitude overlays: on by default, only "off" is written
+    if (s.al === 0) out.push('al=0');
     return out.join('&');
   };
 
@@ -1134,6 +1152,8 @@ button.month-btn { font-size: 11px; }
         case 'v': { const p = v.split(',').map(Number); if (p.length === 3 && p.every(Number.isFinite) && p[2] >= 1 && p[2] <= 80) s.v = p; break; }
         case 'l': s.l = dec(v); break;
         case 'mt': s.mt = dec(v); break;
+        case 'fo': s.fo = v === '0' ? 0 : 1; break;
+        case 'al': s.al = v === '0' ? 0 : 1; break;
         case 'n': s.n = dec(v) === 'latin' ? 'latin' : dec(v) === 'fr' ? 'fr' : ''; break;
         default: break;
       }
@@ -1188,6 +1208,37 @@ button.month-btn { font-size: 11px; }
     client.append = () => Promise.reject(new Error('append is not available on a remote dataset'));
     return client;
   };
+})(typeof globalThis !== 'undefined' ? globalThis : self);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Marching squares: isoline segments of a regular elevation grid (used for the IGN altitude overlay).
+   z: Float32Array / array of n x n values (row-major, index j * n + i); t: threshold; push(p, q) receives the two end points
+   of every segment in grid units (x along i, y along j). Cells with a missing value (NaN) are skipped.
+   Pure function, unit-tested in Node (tests/contour.test.js).
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function (root) {
+  'use strict';
+  const core = root.FMAP_CORE = root.FMAP_CORE || {};
+  core.isoSegments = function isoSegments(z, n, t, push) {
+    for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
+      const a = z[j * n + i], b = z[j * n + i + 1], c = z[(j + 1) * n + i + 1], d = z[(j + 1) * n + i];
+      if (a !== a || b !== b || c !== c || d !== d) continue;
+      const idx = (a >= t ? 1 : 0) | (b >= t ? 2 : 0) | (c >= t ? 4 : 0) | (d >= t ? 8 : 0);
+      if (idx === 0 || idx === 15) continue;
+      const L = [i, j + (t - a) / (d - a)], B = [i + (t - a) / (b - a), j], R = [i + 1, j + (t - b) / (c - b)], T = [i + (t - d) / (c - d), j + 1];
+      switch (idx) {
+        case 1: case 14: push(L, B); break;
+        case 2: case 13: push(B, R); break;
+        case 3: case 12: push(L, R); break;
+        case 4: case 11: push(R, T); break;
+        case 6: case 9: push(B, T); break;
+        case 7: case 8: push(L, T); break;
+        case 5: if ((a + b + c + d) / 4 >= t) { push(L, T); push(B, R); } else { push(L, B); push(R, T); } break;
+        case 10: if ((a + b + c + d) / 4 >= t) { push(L, B); push(R, T); } else { push(L, T); push(B, R); } break;
+        default: break;
+      }
+    }
+  }
 })(typeof globalThis !== 'undefined' ? globalThis : self);
 
 </script>
@@ -1396,6 +1447,13 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     'Où a-t-on vu l’amanite phalloïde (mortelle) ?': 'Where has the death cap (deadly) been seen?', 'Démarrage du moteur…': 'Starting the engine…', 'Lecture des données…': 'Reading the data…',
     'Décodage…': 'Decoding…', 'Décompression…': 'Decompressing…', 'Préparation de la carte…': 'Preparing the map…', 'Premier rendu…': 'First render…', 'Prêt': 'Ready',
     'Indexation de': 'Indexing', 'Fichier data.js introuvable ou invalide.': 'data.js missing or invalid.', 'Aucune commune': 'No commune', 'mis à jour le': 'updated on',
+    'Forêts (IGN, en ligne, aux derniers niveaux de zoom)': 'Forests (IGN, online, at the last zoom levels)',
+    'Altitudes : courbes de niveau, sommets et cols (IGN, en ligne)': 'Altitude: contour lines, summits and passes (IGN, online)',
+    'Ces couches interrogent data.geopf.fr (IGN) avec la zone affichée ; hors ligne, elles sont simplement absentes.': 'These layers query data.geopf.fr (IGN) with the displayed area; offline they are simply absent.',
+    'Aux derniers niveaux de zoom, les': 'At the last zoom levels, the', 'forêts': 'forests', 'altitudes': 'altitudes', '(courbes de niveau, sommets, cols) viennent de l’IGN et sont chargées': '(contour lines, summits, passes) come from the IGN and are loaded', 'en ligne': 'online', '; chacune se désactive dans ⚙ Options de la carte.': '; each can be switched off in ⚙ Map options.',
+    'Chargement des couches IGN…': 'Loading IGN layers…', 'Couches IGN indisponibles (hors ligne ?)': 'IGN layers unavailable (offline?)',
+    'Forêt (IGN, masque 2021-2023)': 'Forest (IGN, 2021-2023 mask)', 'Courbes de niveau (gras : 100 m)': 'Contour lines (bold: 100 m)', 'Sommet ou col, altitude en m': 'Summit or pass, altitude in m',
+    'Forêts, courbes de niveau et altitudes (couches en ligne) :': 'Forests, contour lines and altitudes (online layers):', 'forêts et altitudes : IGN (Licence Ouverte)': 'forests and altitudes: IGN (Open Licence)',
     'Guilde écologique': 'Ecological guild', 'Non renseigné': 'Not recorded', 'Autres': 'Others', 'Zoom +': 'Zoom +', 'Zoom −': 'Zoom −',
   };
 
@@ -1549,6 +1607,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
       initDrawer();
       initHelp();
       initUI();
+      initIgn();
       initTheme();
 
       setLoading('Premier rendu…', 90); await tick();
@@ -1813,7 +1872,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     gBase.attr('transform', 'translate(' + base.ox + ',' + base.oy + ') scale(' + base.s + ')');
     zoom.extent([[0, 0], [w, h]]).translateExtent([[0, 0], [w, h]]);
     const dpr = window.devicePixelRatio || 1;
-    ['grid-canvas', 'commune-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
+    ['grid-canvas', 'commune-canvas', 'ign-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
       const c = $(id);
       c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
       c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1915,7 +1974,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
   function renderLegend(al) {
     const kind = al.dotA > 0.5 ? 'sites' : al.communeA > 0.5 ? 'commune' : al.gridA > 0.5 ? 'grid' : 'dept';
     const hint = layerMode === 'auto' && kind === 'dept' && tf.k < 2.4;
-    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(','), metric, communeCuts.join(',')].join('|');
+    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(','), metric, communeCuts.join(','), ignVisible() ? (ign.forest ? 'f' : '') + (ign.alt ? 'a' : '') : '-'].join('|');
     if (key === legendKey) return;
     legendKey = key;
     const row = (swatch, label) => '<li>' + swatch + '<span>' + label + '</span></li>';
@@ -1940,7 +1999,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
         (showApprox ? row('<i class="circ approx"></i>', 'centre de commune (approximatif)') : '') +
         row('<i class="circ exact group"></i>', 'plusieurs lieux proches regroupés') + '</ul>';
     }
-    $('map-legend').innerHTML = html;
+    $('map-legend').innerHTML = html + ignLegendHtml();
     $('map-legend').classList.remove('swap'); void $('map-legend').offsetWidth; $('map-legend').classList.add('swap');
   }
 
@@ -2021,6 +2080,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     $('dot-canvas').style.opacity = al.dotA.toFixed(3);
     if (gridVis > 0.01) drawGrid();
     if (al.communeA > 0.01) drawCommunes(al); else if (visCommunes.length) { visCommunes = []; $('commune-canvas').getContext('2d').clearRect(0, 0, base.w, base.h); }
+    drawIgn();
     if (al.dotA > 0.01) drawSites(); else clusters = [];
     renderLegend(al);
     updateScale(); updateLocator();
@@ -2730,7 +2790,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     m.ec = Array.from(state.ecoregionSet).map((i) => DICT.ecoregion[i]).filter(Boolean);
     const k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy;
     if (k > 1.05) { const ll = projection.invert([(base.w / 2 - bx) / a, (base.h / 2 - by) / a]); if (ll) m.v = [ll[0], ll[1], k]; }
-    m.l = layerMode; m.mt = metric; m.n = namePref;
+    m.l = layerMode; m.mt = metric; m.n = namePref; m.fo = ign.forest ? 1 : 0; m.al = ign.alt ? 1 : 0;
     return m;
   }
   let hashTimer = 0;
@@ -2764,6 +2824,8 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     if (METRICS[m.mt]) { metric = m.mt; $('sel-metric').value = m.mt; }
     if (['auto', 'dept', 'grid', 'communes', 'sites'].indexOf(m.l) >= 0) setLayerMode(m.l);
     if (m.n && m.n !== namePref) setNamePref(m.n);
+    if (typeof m.fo === 'number' && (m.fo === 0) === ign.forest) setIgn('forest', m.fo === 1);
+    if (typeof m.al === 'number' && (m.al === 0) === ign.alt) setIgn('alt', m.al === 1);
     if (m.v) {
       const p = projection([m.v[0], m.v[1]]), cx = base.ox + base.s * p[0], cy = base.oy + base.s * p[1];
       mapSvg.call(zoom.transform, d3.zoomIdentity.translate(base.w / 2 - m.v[2] * cx, base.h / 2 - m.v[2] * cy).scale(m.v[2]));
@@ -2804,7 +2866,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
     await img.decode();
     ctx.drawImage(img, 0, 0, W * S, H * S);
-    ['grid-canvas', 'commune-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
+    ['grid-canvas', 'commune-canvas', 'ign-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
       const c = $(id); ctx.globalAlpha = c.style.opacity === '' ? 1 : +c.style.opacity; ctx.drawImage(c, 0, 0, W * S, H * S);
     });
     ctx.globalAlpha = 1;
@@ -2825,7 +2887,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     const filters = activeFilters().map((f) => f.label).join(' · ');
     ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(0, (H - 22) * S, W * S, 22 * S);
     ctx.fillStyle = '#2b2217'; ctx.font = (10 * S) + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    ctx.fillText('FongiMap · ' + SOURCE_LINE + ' · limites IGN / Etalab · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
+    ctx.fillText('FongiMap · ' + SOURCE_LINE + ' · limites IGN / Etalab' + (ignVisible() ? ' · forêts et altitudes : IGN (Licence Ouverte)' : '') + ' · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
     return new Promise((resolve) => out.toBlob((b) => { download(b, 'fongimap-' + stamp() + '.png'); resolve(b); }, 'image/png'));
   }
 
@@ -2878,6 +2940,254 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     $('btn-png').addEventListener('click', () => { exportPNG().catch((err) => { console.error(err); window.alert('Export impossible : ' + err.message); }); });
     $('btn-csv').addEventListener('click', exportCSV);
     window.addEventListener('hashchange', () => { if (bootDone && !applyingHash && applyHash(location.hash)) scheduleUpdate(); });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // IGN overlays at the last zoom levels (ONLINE, optional, each with its own switch):
+  //   · forests  — IGN "masque forêt 2021-2023" polygons (Géoplateforme WFS), delimitation drawn over the colour code
+  //   · altitude — contour lines computed here from IGN RGE ALTI elevations (Géoplateforme altimetry service),
+  //                bold labelled lines every 100 m, plus summits and passes (BD TOPO oronyms) with their altitude
+  // Both services are open (Licence Ouverte) and answer with CORS; nothing is shipped in the page, so the offline
+  // promise holds: without a connection the overlays are simply absent. The requests carry only the displayed area.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const IGN = {
+    wfs: 'https://data.geopf.fr/wfs/ows', alti: 'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json',
+    forestLayer: 'IGNF_MASQUE-FORET.2021-2023:masque_foret', oroLayer: 'BDTOPO_V3:detail_orographique',
+    k: [48, 58],                    // fade-in range of the zoom factor (last levels only: bounded download size)
+    tile: 0.05, n: 21,              // tile = 0.05° x 0.05°; elevation sampled on n x n points (≈ 200 m)
+    maxTiles: 70, inflight: 4, batch: 5,
+  };
+  const IGN_KEY = 'fongimap-ign';
+  const ign = { forest: true, alt: true, tiles: new Map(), wanted: new Set(), queue: [], running: 0, altQueue: [], altTimer: 0, errors: 0, lastErr: 0, status: '' };
+  try { const v = JSON.parse(window.localStorage.getItem(IGN_KEY) || 'null'); if (v) { ign.forest = v.forest !== false; ign.alt = v.alt !== false; } } catch (e) { /* defaults */ }
+  const ignSave = () => { try { window.localStorage.setItem(IGN_KEY, JSON.stringify({ forest: ign.forest, alt: ign.alt })); } catch (e) { /* not remembered */ } };
+  const ignAlpha = () => smooth(IGN.k[0], IGN.k[1], tf.k);
+  const ignVisible = () => (ign.forest || ign.alt) && ignAlpha() > 0.02;
+
+  function setIgn(which, on) {
+    ign[which] = on; ignSave();
+    if ($('chk-' + (which === 'forest' ? 'forest' : 'alt'))) $('chk-' + (which === 'forest' ? 'forest' : 'alt')).checked = on;
+    legendKey = ''; requestDraw(); scheduleHash();
+  }
+  function initIgn() {
+    $('chk-forest').checked = ign.forest; $('chk-alt').checked = ign.alt;
+    $('chk-forest').addEventListener('change', (e) => setIgn('forest', e.target.checked));
+    $('chk-alt').addEventListener('change', (e) => setIgn('alt', e.target.checked));
+  }
+
+  // ── tiles ────────────────────────────────────────────────────────────────
+  const tkey = (layer, tx, ty) => layer + ':' + tx + ',' + ty;
+  const tileBox = (tx, ty) => ({ lon0: tx * IGN.tile, lat0: ty * IGN.tile, lon1: (tx + 1) * IGN.tile, lat1: (ty + 1) * IGN.tile });
+
+  // geographic box of the viewport (corners and edge midpoints, the projection is conic)
+  function viewBoxGeo() {
+    const k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy;
+    let lo0 = 1e9, la0 = 1e9, lo1 = -1e9, la1 = -1e9;
+    for (const sx of [0, base.w / 2, base.w]) for (const sy of [0, base.h / 2, base.h]) {
+      const ll = projection.invert([(sx - bx) / a, (sy - by) / a]); if (!ll) continue;
+      lo0 = Math.min(lo0, ll[0]); lo1 = Math.max(lo1, ll[0]); la0 = Math.min(la0, ll[1]); la1 = Math.max(la1, ll[1]);
+    }
+    return { lo0, la0, lo1, la1 };
+  }
+  function visibleTiles() {
+    const b = viewBoxGeo(), out = [];
+    for (let ty = Math.floor(b.la0 / IGN.tile); ty <= Math.floor(b.la1 / IGN.tile); ty++) for (let tx = Math.floor(b.lo0 / IGN.tile); tx <= Math.floor(b.lo1 / IGN.tile); tx++) out.push([tx, ty]);
+    return out;
+  }
+  function tileGet(layer, tx, ty, create) {
+    const key = tkey(layer, tx, ty); let t = ign.tiles.get(key);
+    if (!t && create) {
+      if (ign.tiles.size > 260) { for (const [kk, v] of ign.tiles) { if (!ign.wanted.has(kk) && v.state !== 'loading') ign.tiles.delete(kk); if (ign.tiles.size < 180) break; } }
+      t = { key, layer, tx, ty, state: 'new', data: null, tries: 0, at: 0 }; ign.tiles.set(key, t);
+    }
+    return t;
+  }
+
+  // ── network queue (4 at a time, only tiles still in view) ─────────────────────
+  function enqueue(task) { ign.queue.push(task); pump(); }
+  function pump() {
+    while (ign.running < IGN.inflight && ign.queue.length) {
+      const task = ign.queue.shift();
+      if (!ign.wanted.has(task.tile.key)) { task.tile.state = 'new'; continue; }       // scrolled away before its turn
+      ign.running++; ignStatus();
+      task.run().then(() => { task.tile.state = 'ok'; ign.errors = 0; }, (err) => { task.tile.state = 'err'; task.tile.at = Date.now(); ign.errors++; ign.lastErr = Date.now(); console.warn('IGN :', err && err.message); })
+        .finally(() => { ign.running--; ignStatus(); requestDraw(); pump(); });
+    }
+  }
+  function ignStatus() {
+    const el = $('ign-status'); if (!el) return;
+    const busy = ign.running + ign.queue.length + ign.altQueue.length, off = ign.errors >= 3 && !busy;
+    const txt = busy ? 'Chargement des couches IGN…' : off ? 'Couches IGN indisponibles (hors ligne ?)' : '';
+    if (txt !== ign.status) { ign.status = txt; el.textContent = tr(txt); el.classList.toggle('hidden', !txt); }
+  }
+
+  const wfsUrl = (type, b) => IGN.wfs + '?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG%3A4326&count=5000&typeNames=' + encodeURIComponent(type) +
+    '&bbox=' + [b.lat0, b.lon0, b.lat1, b.lon1].join(',') + ',urn:ogc:def:crs:EPSG::4326';
+  async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+
+  // projected Path2D of polygons (forest mask)
+  function polygonsPath(features) {
+    const p = new Path2D();
+    const ring = (r) => { for (let i = 0; i < r.length; i++) { const q = projection(r[i]); if (i === 0) p.moveTo(q[0], q[1]); else p.lineTo(q[0], q[1]); } p.closePath(); };
+    for (const f of features) {
+      const g = f.geometry; if (!g) continue;
+      (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []).forEach((poly) => poly.forEach(ring));
+    }
+    return p;
+  }
+
+  function loadForest(t) {
+    t.state = 'loading';
+    enqueue({ tile: t, run: async () => { const d = await getJson(wfsUrl(IGN.forestLayer, tileBox(t.tx, t.ty))); t.data = { path: polygonsPath(d.features || []), n: (d.features || []).length }; } });
+  }
+
+  // elevation grid of a tile (n x n, shared edge samples with the neighbours so contours meet at tile borders)
+  function loadAlt(t) {
+    t.state = 'loading'; ign.altQueue.push(t);
+    clearTimeout(ign.altTimer); ign.altTimer = setTimeout(flushAlt, 40);
+  }
+  // the altimetry service rate-limits (HTTP 429): one request at a time, spaced out, retried with a back-off
+  let altBusy = false;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function flushAlt() {
+    if (altBusy) return;
+    altBusy = true;
+    try {
+      while (ign.altQueue.length) {
+        const group = ign.altQueue.splice(0, IGN.batch).filter((t) => ign.wanted.has(t.key) || (t.state = 'new', false));
+        if (!group.length) continue;
+        const lons = [], lats = [], n = IGN.n, d = IGN.tile / (n - 1);
+        group.forEach((t) => { const b = tileBox(t.tx, t.ty); for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { lons.push((b.lon0 + i * d).toFixed(5)); lats.push((b.lat0 + j * d).toFixed(5)); } });
+        const body = JSON.stringify({ lon: lons.join('|'), lat: lats.join('|'), resource: 'ign_rge_alti_wld', delimiter: '|', indent: 'false', measures: 'false', zonly: 'true' });
+        ign.running++; ignStatus();
+        try {
+          let j = null;
+          for (let attempt = 0; attempt < 4 && !j; attempt++) {
+            const r = await fetch(IGN.alti, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+            if (r.status === 429) { await wait(1200 * (attempt + 1)); continue; }
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            j = await r.json();
+          }
+          if (!j) throw new Error('HTTP 429 (rate limit)');
+          const z = j.elevations || [];
+          group.forEach((t, gi) => { const g = new Float32Array(n * n); for (let q = 0; q < n * n; q++) { const v = z[gi * n * n + q]; g[q] = v > -1000 ? v : NaN; } t.data = { z: g, paths: new Map(), labels: new Map() }; t.state = 'ok'; });
+          ign.errors = 0;
+        } catch (err) { group.forEach((t) => { t.state = 'err'; t.at = Date.now(); }); ign.errors++; console.warn('IGN altitude :', err && err.message); }
+        ign.running--; ignStatus(); requestDraw();
+        await wait(250);
+      }
+    } finally { altBusy = false; pump(); }
+  }
+  function loadOro(t) {
+    t.state = 'loading';
+    enqueue({ tile: t, run: async () => {
+      const d = await getJson(wfsUrl(IGN.oroLayer, tileBox(t.tx, t.ty)));
+      t.data = { pts: (d.features || []).filter((f) => f.geometry && f.geometry.type === 'Point' && /sommet|col|pic|dôme|dome|aiguille|puy/i.test(String(f.properties.nature || '')) && f.properties.toponyme)
+        .map((f) => ({ name: f.properties.toponyme, nature: String(f.properties.nature), lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })) };
+    } });
+  }
+
+  // ── contour lines: marching squares on the elevation grid ─────────────────────
+  const isoSegments = FMAP_CORE.isoSegments;
+  // Path2D (minor and major lines) and label candidates of a tile for a contour interval
+  function tileContours(t, minor) {
+    const D = t.data; let r = D.paths.get(minor); if (r) return r;
+    const n = IGN.n, d = IGN.tile / (n - 1), b = tileBox(t.tx, t.ty), major = minor * 5;
+    let lo = 1e9, hi = -1e9; for (let q = 0; q < n * n; q++) { const v = D.z[q]; if (v === v) { if (v < lo) lo = v; if (v > hi) hi = v; } }
+    r = { minor: new Path2D(), major: new Path2D(), labels: [] };
+    if (hi - lo >= minor * 0.6) {
+      const pt = (g) => projection([b.lon0 + g[0] * d, b.lat0 + g[1] * d]);
+      for (let alt = Math.ceil(lo / minor) * minor; alt <= hi; alt += minor) {
+        const isMajor = alt % major === 0, path = isMajor ? r.major : r.minor; let best = null;
+        isoSegments(D.z, n, alt, (p, q) => {
+          const P = pt(p), Q = pt(q); path.moveTo(P[0], P[1]); path.lineTo(Q[0], Q[1]);
+          if (isMajor) { const mx = (P[0] + Q[0]) / 2, my = (P[1] + Q[1]) / 2, dc = (p[0] - n / 2) ** 2 + (p[1] - n / 2) ** 2; if (!best || dc < best.dc) best = { alt, x: mx, y: my, dc, ang: Math.atan2(Q[1] - P[1], Q[0] - P[0]) }; }
+        });
+        if (best) r.labels.push(best);
+      }
+    }
+    D.paths.set(minor, r); return r;
+  }
+  // altitude at a point by bilinear interpolation in the tile grid (null while the grid is not loaded)
+  function altitudeAt(lon, lat) {
+    const tx = Math.floor(lon / IGN.tile), ty = Math.floor(lat / IGN.tile), t = ign.tiles.get(tkey('alt', tx, ty));
+    if (!t || t.state !== 'ok' || !t.data.z) return null;
+    const n = IGN.n, d = IGN.tile / (n - 1), gx = (lon - tx * IGN.tile) / d, gy = (lat - ty * IGN.tile) / d, i = Math.min(n - 2, Math.floor(gx)), j = Math.min(n - 2, Math.floor(gy)), fx = gx - i, fy = gy - j, z = t.data.z;
+    const v = (z[j * n + i] * (1 - fx) + z[j * n + i + 1] * fx) * (1 - fy) + (z[(j + 1) * n + i] * (1 - fx) + z[(j + 1) * n + i + 1] * fx) * fy;
+    return v === v ? Math.round(v) : null;
+  }
+
+  // ── drawing ──────────────────────────────────────────────────────────────
+  const FOREST_FILL = 'rgba(8,96,96,.12)', FOREST_LINE = 'rgba(6,74,74,.9)';
+  const CONTOUR_MINOR = 'rgba(150,98,40,.5)', CONTOUR_MAJOR = 'rgba(120,70,20,.92)';
+  function drawIgn() {
+    const cv = $('ign-canvas'), ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, base.w, base.h);
+    ign.wanted = new Set();
+    const alpha = ignAlpha();
+    if (alpha <= 0.02 || !(ign.forest || ign.alt)) { ignStatus(); return; }
+    const tiles = visibleTiles();
+    if (tiles.length > IGN.maxTiles) { ignStatus(); return; }
+    const dpr = window.devicePixelRatio || 1, k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy;
+    const want = (layer, tx, ty) => { const t = tileGet(layer, tx, ty, true); ign.wanted.add(t.key); if (t.state === 'err' && Date.now() - t.at > 30000 && t.tries < 3) { t.tries++; t.state = 'new'; } return t; };
+    const forestT = [], altT = [], oroT = [];
+    for (const [tx, ty] of tiles) {
+      if (ign.forest) forestT.push(want('forest', tx, ty));
+      if (ign.alt) { altT.push(want('alt', tx, ty)); oroT.push(want('oro', tx, ty)); }
+    }
+    forestT.forEach((t) => { if (t.state === 'new') loadForest(t); });
+    altT.forEach((t) => { if (t.state === 'new') loadAlt(t); });
+    oroT.forEach((t) => { if (t.state === 'new') loadOro(t); });
+    cv.style.opacity = alpha.toFixed(3);
+    ctx.setTransform(a * dpr, 0, 0, a * dpr, bx * dpr, by * dpr); ctx.lineJoin = 'round';
+    if (ign.forest) {
+      ctx.fillStyle = FOREST_FILL; ctx.strokeStyle = FOREST_LINE; ctx.lineWidth = 1.1 / a;
+      forestT.forEach((t) => { if (t.state === 'ok' && t.data) { ctx.fill(t.data.path, 'evenodd'); ctx.stroke(t.data.path); } });
+    }
+    const labels = [], minor = k >= 68 ? 20 : 50;                              // contour interval follows the zoom (bold line every 5th)
+    if (ign.alt) {
+      altT.forEach((t) => {
+        if (t.state !== 'ok' || !t.data.z) return;
+        const c = tileContours(t, minor);
+        ctx.strokeStyle = CONTOUR_MINOR; ctx.lineWidth = 0.55 / a; ctx.stroke(c.minor);
+        ctx.strokeStyle = CONTOUR_MAJOR; ctx.lineWidth = 1.15 / a; ctx.stroke(c.major);
+        c.labels.forEach((l) => labels.push(l));
+      });
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+    const taken = [], free = (x, y, w, h) => { for (const r of taken) if (Math.abs(r[0] - x) < (r[2] + w) / 2 && Math.abs(r[1] - y) < (r[3] + h) / 2) return false; taken.push([x, y, w, h]); return true; };
+    if (ign.alt) {
+      oroT.forEach((t) => {                                                    // summits and passes, with the altitude read from the elevation grid
+        if (t.state !== 'ok' || !t.data) return;
+        t.data.pts.forEach((p) => {
+          const q = projection([p.lon, p.lat]), x = bx + a * q[0], y = by + a * q[1];
+          if (x < 0 || y < 0 || x > base.w || y > base.h) return;
+          const z = altitudeAt(p.lon, p.lat), txt = p.name + (z !== null ? ' · ' + fmt(z) + ' m' : ''), w = ctx.measureText(txt).width + 14;
+          if (!free(x, y - 8, w, 14)) return;
+          ctx.font = '600 10.5px system-ui, sans-serif';
+          ctx.fillStyle = '#3a2410'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x - 4.5, y + 3); ctx.lineTo(x + 4.5, y + 3); ctx.closePath(); ctx.fill();
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.strokeText(txt, x, y - 14); ctx.fillStyle = '#3a2410'; ctx.fillText(txt, x, y - 14);
+        });
+      });
+      ctx.font = '600 10px system-ui, sans-serif';
+      labels.sort((p, q) => p.dc - q.dc).forEach((l) => {                       // altitude of the bold contour lines
+        const x = bx + a * l.x, y = by + a * l.y; if (x < 8 || y < 8 || x > base.w - 8 || y > base.h - 8) return;
+        const txt = fmt(l.alt) + ' m', w = ctx.measureText(txt).width + 8;
+        if (!free(x, y, Math.max(w, 90), 18)) return;
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(txt, x, y); ctx.fillStyle = '#6b3d0c'; ctx.fillText(txt, x, y);
+      });
+    }
+    pump(); ignStatus();
+  }
+
+  // legend rows for the visible overlays
+  function ignLegendHtml() {
+    if (!ignVisible()) return '';
+    const rows = [];
+    if (ign.forest) rows.push('<li><i class="sw ign-forest"></i><span>Forêt (IGN, masque 2021-2023)</span></li>');
+    if (ign.alt) rows.push('<li><i class="sw ign-contour"></i><span>Courbes de niveau (gras : 100 m)</span></li>', '<li><i class="sw ign-peak">▲</i><span>Sommet ou col, altitude en m</span></li>');
+    return '<ul class="kinds ign">' + rows.join('') + '</ul>';
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -3365,6 +3675,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     },
     updateAll, resetAll, pickCommune, setYearRange, setLayerMode, openSpecies, pickSpecies, flyTo, scanSpecies, applyStarter, STARTERS,
     get engine() { return engine; }, serializeState,
+    get ign() { return ign; }, ignDebug() { const h = {}; ign.tiles.forEach((v) => { const k = v.layer + ':' + v.state; h[k] = (h[k] || 0) + 1; }); return { h, running: ign.running, queue: ign.queue.length, alt: ign.altQueue.length, errors: ign.errors }; },
     drawLayers, get geoState() { return geoState; },
     timeDraw(n) {                              // mean duration of a full layer redraw at the current view (ms)
       const t0 = performance.now(); for (let i = 0; i < (n || 5); i++) { labelKey = ''; drawLayers(); } return (performance.now() - t0) / (n || 5);

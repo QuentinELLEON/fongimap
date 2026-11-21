@@ -11,7 +11,7 @@
   const enc = (s) => encodeURIComponent(s).replace(/%7E/g, '~');
   const dec = (s) => { try { return decodeURIComponent(s); } catch (e) { return ''; } };
 
-  core.defaultViewState = () => ({ sp: [], q: '', m: [], d: [], y: null, c: '', e: 0, g: [], ph: [], tr: [], ec: [], v: null, l: 'auto', mt: 'density', n: '' });
+  core.defaultViewState = () => ({ sp: [], q: '', m: [], d: [], y: null, c: '', e: 0, g: [], ph: [], tr: [], ec: [], v: null, l: 'auto', mt: 'density', n: '', fo: 1, al: 1 });
 
   // model -> "k=v&k=v" (defaults omitted)
   core.encodeState = function (s) {
@@ -29,6 +29,8 @@
     if (s.l && s.l !== D.l) out.push('l=' + enc(s.l));
     if (s.mt && s.mt !== D.mt) out.push('mt=' + enc(s.mt));
     if (s.n) out.push('n=' + enc(s.n));
+    if (s.fo === 0) out.push('fo=0');                       // IGN forest / altitude overlays: on by default, only "off" is written
+    if (s.al === 0) out.push('al=0');
     return out.join('&');
   };
 
@@ -51,6 +53,8 @@
         case 'v': { const p = v.split(',').map(Number); if (p.length === 3 && p.every(Number.isFinite) && p[2] >= 1 && p[2] <= 80) s.v = p; break; }
         case 'l': s.l = dec(v); break;
         case 'mt': s.mt = dec(v); break;
+        case 'fo': s.fo = v === '0' ? 0 : 1; break;
+        case 'al': s.al = v === '0' ? 0 : 1; break;
         case 'n': s.n = dec(v) === 'latin' ? 'latin' : dec(v) === 'fr' ? 'fr' : ''; break;
         default: break;
       }

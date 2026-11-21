@@ -57,7 +57,7 @@
     m.ec = Array.from(state.ecoregionSet).map((i) => DICT.ecoregion[i]).filter(Boolean);
     const k = tf.k, a = k * base.s, bx = tf.x + k * base.ox, by = tf.y + k * base.oy;
     if (k > 1.05) { const ll = projection.invert([(base.w / 2 - bx) / a, (base.h / 2 - by) / a]); if (ll) m.v = [ll[0], ll[1], k]; }
-    m.l = layerMode; m.mt = metric; m.n = namePref;
+    m.l = layerMode; m.mt = metric; m.n = namePref; m.fo = ign.forest ? 1 : 0; m.al = ign.alt ? 1 : 0;
     return m;
   }
   let hashTimer = 0;
@@ -91,6 +91,8 @@
     if (METRICS[m.mt]) { metric = m.mt; $('sel-metric').value = m.mt; }
     if (['auto', 'dept', 'grid', 'communes', 'sites'].indexOf(m.l) >= 0) setLayerMode(m.l);
     if (m.n && m.n !== namePref) setNamePref(m.n);
+    if (typeof m.fo === 'number' && (m.fo === 0) === ign.forest) setIgn('forest', m.fo === 1);
+    if (typeof m.al === 'number' && (m.al === 0) === ign.alt) setIgn('alt', m.al === 1);
     if (m.v) {
       const p = projection([m.v[0], m.v[1]]), cx = base.ox + base.s * p[0], cy = base.oy + base.s * p[1];
       mapSvg.call(zoom.transform, d3.zoomIdentity.translate(base.w / 2 - m.v[2] * cx, base.h / 2 - m.v[2] * cy).scale(m.v[2]));
@@ -131,7 +133,7 @@
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
     await img.decode();
     ctx.drawImage(img, 0, 0, W * S, H * S);
-    ['grid-canvas', 'commune-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
+    ['grid-canvas', 'commune-canvas', 'ign-canvas', 'dot-canvas', 'label-canvas'].forEach((id) => {
       const c = $(id); ctx.globalAlpha = c.style.opacity === '' ? 1 : +c.style.opacity; ctx.drawImage(c, 0, 0, W * S, H * S);
     });
     ctx.globalAlpha = 1;
@@ -152,7 +154,7 @@
     const filters = activeFilters().map((f) => f.label).join(' · ');
     ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(0, (H - 22) * S, W * S, 22 * S);
     ctx.fillStyle = '#2b2217'; ctx.font = (10 * S) + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    ctx.fillText('FongiMap · ' + SOURCE_LINE + ' · limites IGN / Etalab · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
+    ctx.fillText('FongiMap · ' + SOURCE_LINE + ' · limites IGN / Etalab' + (ignVisible() ? ' · forêts et altitudes : IGN (Licence Ouverte)' : '') + ' · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
     return new Promise((resolve) => out.toBlob((b) => { download(b, 'fongimap-' + stamp() + '.png'); resolve(b); }, 'image/png'));
   }
 

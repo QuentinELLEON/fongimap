@@ -14,7 +14,7 @@
   function renderLegend(al) {
     const kind = al.dotA > 0.5 ? 'sites' : al.communeA > 0.5 ? 'commune' : al.gridA > 0.5 ? 'grid' : 'dept';
     const hint = layerMode === 'auto' && kind === 'dept' && tf.k < 2.4;
-    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(','), metric, communeCuts.join(',')].join('|');
+    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(','), metric, communeCuts.join(','), ignVisible() ? (ign.forest ? 'f' : '') + (ign.alt ? 'a' : '') : '-'].join('|');
     if (key === legendKey) return;
     legendKey = key;
     const row = (swatch, label) => '<li>' + swatch + '<span>' + label + '</span></li>';
@@ -39,7 +39,7 @@
         (showApprox ? row('<i class="circ approx"></i>', 'centre de commune (approximatif)') : '') +
         row('<i class="circ exact group"></i>', 'plusieurs lieux proches regroupés') + '</ul>';
     }
-    $('map-legend').innerHTML = html;
+    $('map-legend').innerHTML = html + ignLegendHtml();
     $('map-legend').classList.remove('swap'); void $('map-legend').offsetWidth; $('map-legend').classList.add('swap');
   }
 
@@ -120,6 +120,7 @@
     $('dot-canvas').style.opacity = al.dotA.toFixed(3);
     if (gridVis > 0.01) drawGrid();
     if (al.communeA > 0.01) drawCommunes(al); else if (visCommunes.length) { visCommunes = []; $('commune-canvas').getContext('2d').clearRect(0, 0, base.w, base.h); }
+    drawIgn();
     if (al.dotA > 0.01) drawSites(); else clusters = [];
     renderLegend(al);
     updateScale(); updateLocator();

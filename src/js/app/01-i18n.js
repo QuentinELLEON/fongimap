@@ -82,6 +82,13 @@
     'Où a-t-on vu l’amanite phalloïde (mortelle) ?': 'Where has the death cap (deadly) been seen?', 'Démarrage du moteur…': 'Starting the engine…', 'Lecture des données…': 'Reading the data…',
     'Décodage…': 'Decoding…', 'Décompression…': 'Decompressing…', 'Préparation de la carte…': 'Preparing the map…', 'Premier rendu…': 'First render…', 'Prêt': 'Ready',
     'Indexation de': 'Indexing', 'Fichier data.js introuvable ou invalide.': 'data.js missing or invalid.', 'Aucune commune': 'No commune', 'mis à jour le': 'updated on',
+    'Forêts (IGN, en ligne, aux derniers niveaux de zoom)': 'Forests (IGN, online, at the last zoom levels)',
+    'Altitudes : courbes de niveau, sommets et cols (IGN, en ligne)': 'Altitude: contour lines, summits and passes (IGN, online)',
+    'Ces couches interrogent data.geopf.fr (IGN) avec la zone affichée ; hors ligne, elles sont simplement absentes.': 'These layers query data.geopf.fr (IGN) with the displayed area; offline they are simply absent.',
+    'Aux derniers niveaux de zoom, les': 'At the last zoom levels, the', 'forêts': 'forests', 'altitudes': 'altitudes', '(courbes de niveau, sommets, cols) viennent de l’IGN et sont chargées': '(contour lines, summits, passes) come from the IGN and are loaded', 'en ligne': 'online', '; chacune se désactive dans ⚙ Options de la carte.': '; each can be switched off in ⚙ Map options.',
+    'Chargement des couches IGN…': 'Loading IGN layers…', 'Couches IGN indisponibles (hors ligne ?)': 'IGN layers unavailable (offline?)',
+    'Forêt (IGN, masque 2021-2023)': 'Forest (IGN, 2021-2023 mask)', 'Courbes de niveau (gras : 100 m)': 'Contour lines (bold: 100 m)', 'Sommet ou col, altitude en m': 'Summit or pass, altitude in m',
+    'Forêts, courbes de niveau et altitudes (couches en ligne) :': 'Forests, contour lines and altitudes (online layers):', 'forêts et altitudes : IGN (Licence Ouverte)': 'forests and altitudes: IGN (Open Licence)',
     'Guilde écologique': 'Ecological guild', 'Non renseigné': 'Not recorded', 'Autres': 'Others', 'Zoom +': 'Zoom +', 'Zoom −': 'Zoom −',
   };
 

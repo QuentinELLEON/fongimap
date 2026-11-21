@@ -51,3 +51,15 @@ Because the records are already sorted, interleaving costs nothing in compressio
 
 - Worker-from-Blob on `file://` in each browser (the page falls back to the main-thread engine automatically; the handshake takes ≤ 4 s to fail). Firefox, Safari, Edge not tested.
 - Memory use (worker + main thread), low-end hardware, phones.
+
+## IGN overlays (Géoplateforme, measured 21 November 2026)
+
+| Layer | Payload per tile | Verdict |
+|---|---|---|
+| Forest mask 2021-2023 (WFS) | 0.05° tile: 372 kB JSON, **115 kB gzipped**, 0.8 s; 0.1° tile: 0.6–1.2 MB | used |
+| BD TOPO vegetation (WFS) | 0.1° tile: 5.8 MB (2 261 polygons) | too heavy (would give forest types) |
+| Contour lines (WFS `ELEVATION.CONTOUR.LINE:courbe`) | 0.1° tile: 30 MB (Jura, 38 s) / 124 MB (Alps, 121 s) | unusable |
+| Elevations (altimetry POST) | 2 500 points in 2.2 s, `Access-Control-Allow-Origin: *`; HTTP 429 when several requests run in parallel | used, serialised |
+| Summits / passes (WFS `detail_orographique`) | 48 kB for 73 features (Alps tile) | used |
+
+At k = 66 over the Jura or the Oisans (24–30 tiles in view) all layers are ready in about 15–25 s on this connection; a full redraw of every layer takes ≈ 6 ms once loaded.
