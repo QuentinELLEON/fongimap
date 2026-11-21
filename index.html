@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FongiMap — Observations fongiques de France</title>
+<script>try{var p=localStorage.getItem('fongimap-theme');var d=p==='dark'||(p!=='light'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}catch(e){}</script>
 <style>
 /* ─────────────────────────────────────────────────────────
    FongiMap – stylesheet
@@ -36,7 +37,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
 body { min-width: 0; min-height: 0; overflow: auto; }
-a { color: var(--accent1); }
+a { color: var(--link, var(--accent1)); }
 button { font: inherit; color: inherit; }
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; }
 
@@ -426,6 +427,29 @@ button.month-btn { font-size: 11px; }
 #sel-dataset.hidden, #ds-banner.hidden, #chunk-progress.hidden { display: none; }
 #ds-banner { background: #7a1b12; color: #fff; padding: 5px 12px; font-size: 12px; text-align: center; flex-shrink: 0; }
 #chunk-progress { margin-left: 8px; font-size: 11.5px; opacity: .9; }
+
+/* ── language button ── */
+#btn-lang { height: 30px; min-width: 34px; padding: 0 8px; border-radius: 15px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+#btn-lang:hover { background: rgba(255,255,255,.3); }
+
+/* ── dark theme: interface dark, map area keeps the light "paper" tokens (all data colours stay validated) ── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e1b16; --bg2: #26231c; --bg3: #322e25; --border: #4a4435;
+  --fg: #efe9dc; --fg2: #cdc5b2; --fg3: #b0a68e; --link: #8fcf8c; --muted: #6b6451;
+  --shadow: 0 2px 8px rgba(0,0,0,.5); --shadow-l: 0 8px 28px rgba(0,0,0,.6);
+}
+:root[data-theme="dark"] #topbar { background: #2a4a27; }
+:root[data-theme="dark"] #map-container, :root[data-theme="dark"] #map-container * {
+  --bg: #f7f4ee; --bg2: #eeebe1; --bg3: #e4e0d4; --border: #cdc9bc;
+  --fg: #2b2217; --fg2: #5a4e3a; --fg3: #675b47; --link: #3a6b35; color-scheme: light;
+}
+:root[data-theme="dark"] #filter-bar { background: var(--bg2); }
+:root[data-theme="dark"] .fchip { background: color-mix(in srgb, var(--accent1) 25%, var(--bg)); border-color: #5d9a56; }
+:root[data-theme="dark"] .fchip i { background: #5d9a56; }
+:root[data-theme="dark"] .chip.active, :root[data-theme="dark"] .month-btn.active, :root[data-theme="dark"] .seg button.on { background: #3a6b35; color: #fff; }
+:root[data-theme="dark"] #side-tabs button.on { color: #8fcf8c; border-bottom-color: #8fcf8c; }
+:root[data-theme="dark"] .help-card { background: var(--bg); color: var(--fg); }
 </style>
 </head>
 <body>
@@ -450,6 +474,7 @@ button.month-btn { font-size: 11px; }
         <button data-v="2" title="Espèces toxiques ou mortelles (indicatif)">☠ Toxiques</button>
       </div>
       <button id="btn-reset" title="Réinitialiser tous les filtres">↺ Réinitialiser</button>
+      <button id="btn-lang" type="button">EN</button>
       <button id="btn-help" title="À quoi sert ce site ?" aria-label="Aide : à quoi sert ce site ?">?</button>
     </div>
   </header>
@@ -557,6 +582,7 @@ button.month-btn { font-size: 11px; }
                   <option value="rarefied">Richesse raréfiée (100 obs.)</option>
                 </select>
               </label>
+              <label class="opt-row">Thème <select id="sel-theme" title="Thème"><option value="auto">Automatique</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
               <div class="opt-row"><span>Partager et exporter</span><div class="opt-actions"><button type="button" id="btn-copylink">Copier le lien</button><button type="button" id="btn-png" title="Image de la carte avec légende et sources">Image PNG</button><button type="button" id="btn-csv" title="Liste des espèces de la vue, en CSV">Liste CSV</button></div></div>
               <label class="opt-row chk" title="Décocher pour ne garder que les vrais points GPS"><input type="checkbox" id="chk-approx" checked> Afficher les positions approximatives (centre de commune)</label>
             </div>
@@ -1229,7 +1255,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
   // 10 km grid cells (equal area -> count = density -> lightness ramp): 1-9, 10-49, 50-199, 200-999, 1000+
   const CELL_CUTS = [10, 50, 200, 1000], CELL_LABELS = ['1 – 9', '10 – 49', '50 – 199', '200 – 999', '1 000 et plus'];
   const cellClass = (w) => (w >= 1000 ? 4 : w >= 200 ? 3 : w >= 50 ? 2 : w >= 10 ? 1 : 0);
-  const MONTHS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+  let MONTHS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
   // failure bits
   const F_SPECIES = 1, F_PHYLUM = 2, F_GUILD = 4, F_TROPHIC = 8, F_ECO = 16, F_YEAR = 32, F_MONTH = 64, F_DEPT = 128, F_EDIBLE = 256, F_COMMUNE = 512;
   const TABLEAU = d3.schemeTableau10;
@@ -1251,7 +1277,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
   EDI.forEach((e) => { e.ink = e.colour === '#7a1b12' ? '#ffffff' : '#1d160c'; });   // text colour with contrast >= 4.5:1 on the badge colour
 
   const $ = (id) => document.getElementById(id);
-  const fmt = (n) => Number(n).toLocaleString('fr-FR');
+  const fmt = (n) => Number(n).toLocaleString(LANG === 'en' ? 'en-GB' : 'fr-FR');
     const tick = () => new Promise((r) => setTimeout(r, 15));
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -1285,6 +1311,157 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
   let lastAgg = null;
   const perf = { filter: 0, aggregate: 0, render: 0, total: 0 };
 
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Language (French default, English on request: ?lang=en or the FR/EN button; remembered in localStorage)
+  // French is the source language everywhere in the code. English is applied to the DOM by phrase: the page text and
+  // everything the app writes later (tooltips, legend, lists, drawer) is translated by a MutationObserver. Species
+  // names, place names and the edibility notes of the data stay as they are (French / Latin).
+  // ═══════════════════════════════════════════════════════════════════════════
+  const LANG = (() => {
+    try {
+      const m = /[?&]lang=(fr|en)\b/.exec(location.search);
+      if (m) { window.localStorage.setItem('fongimap-lang', m[1]); return m[1]; }
+      return window.localStorage.getItem('fongimap-lang') === 'en' ? 'en' : 'fr';
+    } catch (e) { return /[?&]lang=en\b/.test(location.search) ? 'en' : 'fr'; }
+  })();
+
+  // whole text of an element (trimmed) -> English
+  const EN_EXACT = {
+    'Tous': 'All', 'Auto': 'Auto', 'Départements': 'Departments', 'Hexagones': 'Hexagons', 'Communes': 'Communes', 'Lieux': 'Places',
+    'Latin': 'Latin', 'Français': 'French', 'Mois': 'Months', 'Période': 'Period', 'Filtres': 'Filters', 'Département': 'Department',
+    'Écorégion': 'Ecoregion', 'Mode trophique': 'Trophic mode', 'Phylum': 'Phylum', 'Champignons': 'Mushrooms', '🍄 Champignons': '🍄 Mushrooms',
+    'Plus observées': 'Most observed', 'A→Z': 'A→Z', 'Nom affiché': 'Name shown', 'Guilde écologique': 'Ecological guild', 'Filtres avancés': 'Advanced filters',
+    'Commencer': 'Start', 'Essayez': 'Try', 'Ce que vous pouvez y trouver': 'What you can find here', 'Comment l’utiliser': 'How to use it', 'Sources et limites': 'Sources and limits',
+    '🍽 Comestibles': '🍽 Edible', '☠ Toxiques': '☠ Toxic', '↺ Réinitialiser': '↺ Reset', '⚙ Options de la carte': '⚙ Map options', 'Niveau de détail': 'Level of detail',
+    'Couleur des départements': 'Department colour', 'Thème': 'Theme', 'Automatique': 'Automatic', 'Clair': 'Light', 'Sombre': 'Dark', 'Partager et exporter': 'Share and export', 'Copier le lien': 'Copy link', 'Image PNG': 'PNG image', 'Liste CSV': 'CSV list',
+    'Chargement…': 'Loading…', 'synthétique': 'synthetic', 'Photo': 'Photo', 'Tri': 'Sort', 'Comestibilité': 'Edibility', 'Espèce': 'Species', 'Commune': 'Commune',
+    'Comestibles': 'Edible', 'Toxiques': 'Toxic', 'Filtre': 'Filter', 'Tout réinitialiser': 'Reset all', 'Aucune commune': 'No commune',
+  };
+  // fragments (matched as whole words / phrases anywhere in a text) -> English
+  const EN_FRAG = {
+    'Où et quand trouve-t-on quels champignons en France ?': 'Where and when can you find which mushrooms in France?',
+    'observations ·': 'observations ·', 'espèces ·': 'species ·', 'départements': 'departments', 'espèces': 'species', 'espèce': 'species',
+    'Jeu de données': 'Dataset', 'Données :': 'Data:', 'Fond de carte :': 'Basemap:', 'Noms et populations des communes :': 'Commune names and populations:',
+    'Comestibilité indicative': 'Indicative edibility', ': ne jamais consommer un champignon sur la seule base de cette application.': ': never eat a mushroom on the sole basis of this application.',
+    'Niveau de détail de la carte': 'Map level of detail', 'Le niveau de détail suit le zoom': 'The level of detail follows the zoom', 'Hexagones de 10 km': '10 km hexagons',
+    'Limites et couleurs des communes': 'Commune boundaries and colours', 'Lieux de récolte': 'Collection places', 'Mesure représentée par la couleur des départements': 'Measure shown by the département colour',
+    'Observations par 100 km²': 'Observations per 100 km²', 'Observations (total)': 'Observations (total)', 'Espèces distinctes': 'Distinct species', 'Richesse raréfiée (100 obs.)': 'Rarefied richness (100 obs.)',
+    'Afficher les positions approximatives (centre de commune)': 'Show approximate positions (commune centre)', 'Décocher pour ne garder que les vrais points GPS': 'Untick to keep only real GPS points',
+    'Image de la carte avec légende et sources': 'Map image with legend and sources', 'Liste des espèces de la vue, en CSV': 'List of the species in view, as CSV',
+    'Vue entière': 'Whole France', 'Position sur la carte de France': 'Position on the map of France', 'Fermer (Échap)': 'Close (Esc)',
+    'À quoi sert FongiMap ?': 'What is FongiMap for?', 'À quoi sert ce site ?': 'What is this site for?', 'Aide : à quoi sert ce site ?': 'Help: what is this site for?',
+    'FongiMap montre': 'FongiMap shows', 'où et quand des champignons ont été observés en France': 'where and when mushrooms were observed in France',
+    ', espèce par espèce, à partir d’un million d’observations de naturalistes (base FongiBase).': ', species by species, from a million naturalists’ observations (FongiBase).',
+    'Où a-t-on vu telle espèce ?': 'Where has a given species been seen?', 'Quelles espèces dans mon département, en octobre ?': 'Which species in my département, in October?',
+    'Lesquelles sont comestibles, lesquelles toxiques ?': 'Which are edible, which toxic?', 'Quelle est la fiabilité de la position ?': 'How reliable is the position?',
+    'Choisissez un champignon dans la liste': 'Pick a mushroom in the', ': la carte s’y place et sa fiche s’ouvre.': 'list: the map goes there and its sheet opens.',
+    'Zoomez': 'Zoom', ': départements, puis hexagones de 10 km, puis lieux ; les noms de lieux apparaissent.': ': départements, then 10 km hexagons, then communes and places; place names appear.',
+    'Affinez avec l’onglet': 'Refine with the', '(période, mois, département) ou « Comestibles / Toxiques ».': 'tab (period, months, département) or “Edible / Toxic”.',
+    ', Gautier et al. 2022, licence CC-BY 4.0.': ', Gautier et al. 2022, CC-BY 4.0 licence.', 'Les cartes montrent surtout': 'The maps mostly show', 'où les observateurs vont': 'where observers go',
+    '(effort d’observation), pas l’abondance réelle des champignons.': '(observation effort), not the real abundance of mushrooms.', 'La comestibilité est': 'Edibility is',
+    'indicative, partielle et non validée': 'indicative, partial and not validated', ': ne jamais consommer un champignon sur la seule base de cette application ; faites-le contrôler par un pharmacien ou une société mycologique.': ': never eat a mushroom on the sole basis of this application; have it checked by a pharmacist or a mycological society.',
+    'Chercher : cèpe, girolle, Amanita, famille…': 'Search: porcini, chanterelle, Amanita, family…', 'Chercher une espèce': 'Search for a species', 'Nom affiché en premier': 'Name shown first',
+    'Année minimale': 'Minimum year', 'Année maximale': 'Maximum year', 'Filtres actifs': 'Active filters', 'Aller à une commune…': 'Go to a commune…', 'Aller à une commune': 'Go to a commune',
+    'Toutes les espèces': 'All species', 'Espèces comestibles (indicatif)': 'Edible species (indicative)', 'Espèces toxiques ou mortelles (indicatif)': 'Toxic or deadly species (indicative)', 'Réinitialiser tous les filtres': 'Reset all filters',
+    'Jeu de données synthétique : valeurs aléatoires de démonstration, sans lien avec de vraies observations.': 'Synthetic dataset: random demonstration values, unrelated to real observations.',
+    ': valeurs aléatoires de démonstration, sans lien avec de vraies observations.': ': random demonstration values, unrelated to real observations.',
+    // legend and map texts
+    'Reflète aussi le nombre d’observateurs.': 'Also reflects the number of observers.', 'Observations par département': 'Observations per département', 'Dépend de la taille du département.': 'Depends on the size of the département.',
+    'Espèces distinctes par département': 'Distinct species per département', 'Croît avec le nombre d’observations.': 'Grows with the number of observations.', 'Espèces attendues pour': 'Species expected for',
+    'Comparable entre départements ; écarts souvent faibles.': 'Comparable between départements; differences are often small.', 'moins de': 'less than', 'et plus': 'and more', 'aucune observation': 'no observations',
+    ' Zoomez : des hexagones puis des lieux apparaissent.': ' Zoom in: hexagons, then places, appear.', 'Observations par commune': 'Observations per commune', 'Observations par km²': 'Observations per km²',
+    'Chaque commune est colorée selon son nombre d’observations': 'Each commune is coloured by its number of observations', 'rapporté à sa surface': 'relative to its area',
+    'Les lieux au centre de la commune n’ont pas de position plus fine : la commune est l’échelle fiable.': 'Places at the commune centre have no finer position: the commune is the reliable scale.',
+    'Traits : commune < département < région.': 'Lines: commune < département < region.', 'Observations par hexagone': 'Observations per hexagon',
+    'Chaque hexagone mesure 10 km de large (≈ 87 km²) : plus il est foncé, plus il y a eu d’observations.': 'Each hexagon is 10 km wide (≈ 87 km²): the darker it is, the more observations there were.',
+    'Observations par lieu': 'Observations per place', 'position GPS': 'GPS position', 'centre de commune (approximatif)': 'commune centre (approximate)', 'plusieurs lieux proches regroupés': 'several nearby places grouped',
+    'Aucune donnée': 'No data', 'Aucune observation': 'No observations', 'espèces distinctes': 'distinct species', 'Guilde dominante :': 'Dominant guild:', 'Clic : filtrer · double-clic : zoomer': 'Click: filter · double-click: zoom',
+    'Lieu sans nom': 'Unnamed place', 'position approximative (centre de commune)': 'approximate position (commune centre)', 'Clic : filtrer sur': 'Click: filter on', 'lieux regroupés': 'places grouped',
+    'Clic : zoomer pour les séparer': 'Click: zoom in to separate them', 'Hexagone de 10 km': '10 km hexagon', 'Clic : filtrer sur cette commune': 'Click: filter on this commune', 'hab.': 'inh.',
+    // species list and drawer
+    'par ordre alphabétique': 'in alphabetical order', 'triées par observations': 'sorted by observations', 'Voir les': 'See the', 'sur la carte': 'on the map', 'Voir plus': 'Show more', 'restantes': 'remaining',
+    'Aperçu :': 'Preview:', 'aussi appelé :': 'also called:', 'Aussi appelé :': 'Also called:', 'Aucune espèce ne correspond à cette recherche avec les filtres actuels.': 'No species matches this search with the current filters.',
+    'Aucune espèce avec les filtres actuels : assouplissez-les (Réinitialiser).': 'No species with the current filters: relax them (Reset).', 'Voir sur la carte': 'Show on map',
+    'Aucune information de comestibilité dans la base embarquée.': 'No edibility information in the embedded database.', 'période': 'period', 'lieux géolocalisés': 'geolocated places',
+    'Saisonnalité': 'Seasonality', 'Départements les plus riches': 'Richest départements', 'Guilde': 'Guild',
+    'Information indicative et non validée : ne jamais consommer un champignon sur la seule base de cette application ; faites-le contrôler par un pharmacien ou une société mycologique.': 'Indicative, unvalidated information: never eat a mushroom on the sole basis of this application; have it checked by a pharmacist or a mycological society.',
+    'Comestible après cuisson / avec précautions': 'Edible when cooked / with care', 'Non comestible ou sans intérêt': 'Not edible or of no interest', 'Comestibilité inconnue': 'Edibility unknown',
+    'Comestible': 'Edible', 'Toxique': 'Toxic', 'Mortel': 'Deadly', 'Inconnue': 'Unknown', 'À cuire': 'Cook first', 'Non comestible': 'Not edible',
+    // filter bar, live region, misc
+    ': retirer ce filtre': ': remove this filter', 'Retirer ce filtre': 'Remove this filter', 'départements.': 'departments.', 'Export impossible :': 'Export impossible:', 'Lien copié ✓': 'Link copied ✓',
+    'Carte des observations. Flèches : déplacer. Plus et moins : zoomer. Zéro : vue entière.': 'Map of observations. Arrow keys: pan. Plus and minus: zoom. Zero: whole France.',
+    'ont une position sur la carte, dont': 'have a position on the map, of which', 'seulement au centre de la commune (symboles plus pâles).': 'only at the commune centre (paler symbols).',
+    'Où trouver des cèpes ?': 'Where to find porcini?', 'Quels champignons comestibles en octobre ?': 'Which edible mushrooms in October?', 'Où trouve-t-on des morilles au printemps ?': 'Where are morels found in spring?',
+    'Où a-t-on vu l’amanite phalloïde (mortelle) ?': 'Where has the death cap (deadly) been seen?', 'Démarrage du moteur…': 'Starting the engine…', 'Lecture des données…': 'Reading the data…',
+    'Décodage…': 'Decoding…', 'Décompression…': 'Decompressing…', 'Préparation de la carte…': 'Preparing the map…', 'Premier rendu…': 'First render…', 'Prêt': 'Ready',
+    'Indexation de': 'Indexing', 'Fichier data.js introuvable ou invalide.': 'data.js missing or invalid.', 'Aucune commune': 'No commune', 'mis à jour le': 'updated on',
+    'Guilde écologique': 'Ecological guild', 'Non renseigné': 'Not recorded', 'Autres': 'Others', 'Zoom +': 'Zoom +', 'Zoom −': 'Zoom −',
+  };
+
+  const FRAG_KEYS = Object.keys(EN_FRAG).sort((a, b) => b.length - a.length);
+  let FRAG_RES = null;
+  function fragRes() {
+    if (FRAG_RES) return FRAG_RES;
+    const esc_ = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    FRAG_RES = FRAG_KEYS.map((k) => { let re; try { re = new RegExp('(?<![\\p{L}\\p{N}])' + esc_(k) + '(?![\\p{L}\\p{N}])', 'gu'); } catch (e) { re = new RegExp(esc_(k), 'g'); } return [re, EN_FRAG[k], k]; });
+    return FRAG_RES;
+  }
+  // English version of a piece of text (identity in French)
+  function tr(s) {
+    if (LANG !== 'en' || !s) return s;
+    const t = s.trim();
+    if (t && Object.prototype.hasOwnProperty.call(EN_EXACT, t)) return s.replace(t, EN_EXACT[t]);
+    let out = s;
+    for (const [re, en, k] of fragRes()) { if (out.indexOf(k) >= 0) out = out.replace(re, en); }
+    return out;
+  }
+  const SKIP_I18N = '#sp-list, .dr-title, .dr-latin, .dr-alias, #commune-results, #search-species, #commune-search, script, style, .sp-name';
+  const ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
+  function translateTree(root) {
+    if (LANG !== 'en' || !root) return;
+    if (root.nodeType === 3) { const v = root.nodeValue; if (v && v.trim()) { const t = tr(v); if (t !== v) root.nodeValue = t; } return; }
+    if (root.nodeType !== 1) return;
+    ATTRS.forEach((a) => { const v = root.getAttribute && root.getAttribute(a); if (v) { const t = tr(v); if (t !== v) root.setAttribute(a, t); } });   // placeholders and titles even on skipped elements
+    if (root.matches && root.matches(SKIP_I18N)) return;                                                                                       // but never the names inside them
+    root.childNodes.forEach(translateTree);
+  }
+  function initLanguage() {
+    document.documentElement.lang = LANG;
+    const b = document.getElementById('btn-lang');
+    if (b) {
+      b.textContent = LANG === 'en' ? 'FR' : 'EN'; b.title = LANG === 'en' ? 'Passer en français' : 'Switch to English';
+      b.addEventListener('click', () => { try { window.localStorage.setItem('fongimap-lang', LANG === 'en' ? 'fr' : 'en'); } catch (e) { /* not remembered */ } location.href = location.pathname + '?lang=' + (LANG === 'en' ? 'fr' : 'en') + location.hash; });
+    }
+    if (LANG !== 'en') return;
+    translateTree(document.body);
+    new MutationObserver((recs) => {
+      for (const r of recs) {
+        if (r.type === 'characterData') translateTree(r.target);
+        else if (r.type === 'attributes') { const v = r.target.getAttribute(r.attributeName), t = tr(v || ''); if (v && t !== v) r.target.setAttribute(r.attributeName, t); }
+        else r.addedNodes.forEach(translateTree);
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  }
+  if (LANG === 'en') MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  initLanguage();
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Theme: light, dark or automatic (system preference). Panels, header and dialogs go dark; the map area keeps its
+  // light "paper" palette so that every data colour and label halo stays validated (see .style.css, #map-container).
+  // ═══════════════════════════════════════════════════════════════════════════
+  const THEME_KEY = 'fongimap-theme';
+  let themePref = 'auto';
+  try { const v = window.localStorage.getItem(THEME_KEY); if (v === 'light' || v === 'dark') themePref = v; } catch (e) { /* blocked storage: automatic */ }
+  const systemDark = () => !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  function applyTheme() { document.documentElement.setAttribute('data-theme', themePref === 'dark' || (themePref === 'auto' && systemDark()) ? 'dark' : 'light'); }
+  function initTheme() {
+    applyTheme();
+    if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', applyTheme); }
+    const sel = $('sel-theme'); if (!sel) return;
+    sel.value = themePref;
+    sel.addEventListener('change', () => { themePref = sel.value; try { window.localStorage.setItem(THEME_KEY, themePref === 'auto' ? '' : themePref); } catch (e) { /* not remembered */ } applyTheme(); });
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Bootstrap
@@ -1372,6 +1549,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
       initDrawer();
       initHelp();
       initUI();
+      initTheme();
 
       setLoading('Premier rendu…', 90); await tick();
       await updateAll(true);
@@ -1437,8 +1615,8 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
     'Saprotroph': 'Saprotrophe', 'Symbiotroph': 'Symbiotrophe', 'Pathotroph': 'Pathotrophe', 'Pathotroph-Saprotroph': 'Pathotrophe-saprotrophe',
     'Saprotroph-Symbiotroph': 'Saprotrophe-symbiotrophe', 'Pathotroph-Symbiotroph': 'Pathotrophe-symbiotrophe', 'Pathotroph-Saprotroph-Symbiotroph': 'Pathotrophe-saprotrophe-symbiotrophe',
   };
-  const guildFr = (v) => GUILD_FR[v] || v;
-  const dictLabel = (dictName, v) => (dictName === 'guild' ? guildFr(v) : dictName === 'trophic' ? (TROPHIC_FR[v] || v) : v);
+  const guildFr = (v) => (LANG === 'en' ? v : GUILD_FR[v] || v);
+  const dictLabel = (dictName, v) => (dictName === 'guild' ? guildFr(v) : dictName === 'trophic' ? (LANG === 'en' ? v : TROPHIC_FR[v] || v) : v);
 
   const NAME_KEY = 'fongimap-name-pref';
   const prefStore = {
@@ -2605,11 +2783,11 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
   // species of the current view as CSV (UTF-8 with BOM for spreadsheets); the source is repeated on every row
   function exportCSV() {
     const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
-    const rows = [['nom_francais', 'nom_latin', 'famille', 'observations', 'comestibilite_indicative', 'source']];
+    const rows = [['nom_francais', 'nom_latin', 'cd_ref_taxref', 'famille', 'observations', 'comestibilite_indicative', 'source']];
     const idx = [];
     for (let s = 0; s < DICT.species.length; s++) if (lastAgg.bySpecies[s] > 0) idx.push(s);
     idx.sort((p, r) => lastAgg.bySpecies[r] - lastAgg.bySpecies[p] || p - r);
-    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, SOURCE_LINE]));
+    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], (META.cdref && META.cdref[s]) || '', spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, SOURCE_LINE]));
     download(new Blob(['\uFEFF' + rows.map((r) => r.map(q).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'fongimap-especes-' + stamp() + '.csv');
   }
 
@@ -3162,6 +3340,7 @@ window.FMAP_REGIONS = {"type":"FeatureCollection","features":[{"type":"Feature",
         '<div class="dr-actions">' +
         (info.bbox ? '<button class="primary" id="dr-fly">Voir sur la carte</button>' : '') +
         '<a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/' + encodeURIComponent(info.name.replace(/ /g, '_')) + '">Wikipédia ↗</a>' +
+        ((META.cdref && META.cdref[idx]) ? '<a target="_blank" rel="noopener" href="https://inpn.mnhn.fr/espece/cd_nom/' + encodeURIComponent(META.cdref[idx]) + '">INPN ↗</a>' : '') +
         '<a target="_blank" rel="noopener" href="https://www.gbif.org/species/search?q=' + encodeURIComponent(info.name) + '">GBIF ↗</a></div></div>';
       miniBars($('dr-months'), info.months, MONTHS, COL_ACCENT1);
       const dh = d3.select('#dr-depts'), mx = d3.max(info.topDepts, (d) => d.n) || 1;

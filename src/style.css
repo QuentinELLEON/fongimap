@@ -29,7 +29,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
 body { min-width: 0; min-height: 0; overflow: auto; }
-a { color: var(--accent1); }
+a { color: var(--link, var(--accent1)); }
 button { font: inherit; color: inherit; }
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; }
 
@@ -419,3 +419,26 @@ button.month-btn { font-size: 11px; }
 #sel-dataset.hidden, #ds-banner.hidden, #chunk-progress.hidden { display: none; }
 #ds-banner { background: #7a1b12; color: #fff; padding: 5px 12px; font-size: 12px; text-align: center; flex-shrink: 0; }
 #chunk-progress { margin-left: 8px; font-size: 11.5px; opacity: .9; }
+
+/* ── language button ── */
+#btn-lang { height: 30px; min-width: 34px; padding: 0 8px; border-radius: 15px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+#btn-lang:hover { background: rgba(255,255,255,.3); }
+
+/* ── dark theme: interface dark, map area keeps the light "paper" tokens (all data colours stay validated) ── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e1b16; --bg2: #26231c; --bg3: #322e25; --border: #4a4435;
+  --fg: #efe9dc; --fg2: #cdc5b2; --fg3: #b0a68e; --link: #8fcf8c; --muted: #6b6451;
+  --shadow: 0 2px 8px rgba(0,0,0,.5); --shadow-l: 0 8px 28px rgba(0,0,0,.6);
+}
+:root[data-theme="dark"] #topbar { background: #2a4a27; }
+:root[data-theme="dark"] #map-container, :root[data-theme="dark"] #map-container * {
+  --bg: #f7f4ee; --bg2: #eeebe1; --bg3: #e4e0d4; --border: #cdc9bc;
+  --fg: #2b2217; --fg2: #5a4e3a; --fg3: #675b47; --link: #3a6b35; color-scheme: light;
+}
+:root[data-theme="dark"] #filter-bar { background: var(--bg2); }
+:root[data-theme="dark"] .fchip { background: color-mix(in srgb, var(--accent1) 25%, var(--bg)); border-color: #5d9a56; }
+:root[data-theme="dark"] .fchip i { background: #5d9a56; }
+:root[data-theme="dark"] .chip.active, :root[data-theme="dark"] .month-btn.active, :root[data-theme="dark"] .seg button.on { background: #3a6b35; color: #fff; }
+:root[data-theme="dark"] #side-tabs button.on { color: #8fcf8c; border-bottom-color: #8fcf8c; }
+:root[data-theme="dark"] .help-card { background: var(--bg); color: var(--fg); }

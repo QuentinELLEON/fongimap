@@ -84,6 +84,7 @@
         '<div class="dr-actions">' +
         (info.bbox ? '<button class="primary" id="dr-fly">Voir sur la carte</button>' : '') +
         '<a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/' + encodeURIComponent(info.name.replace(/ /g, '_')) + '">Wikipédia ↗</a>' +
+        ((META.cdref && META.cdref[idx]) ? '<a target="_blank" rel="noopener" href="https://inpn.mnhn.fr/espece/cd_nom/' + encodeURIComponent(META.cdref[idx]) + '">INPN ↗</a>' : '') +
         '<a target="_blank" rel="noopener" href="https://www.gbif.org/species/search?q=' + encodeURIComponent(info.name) + '">GBIF ↗</a></div></div>';
       miniBars($('dr-months'), info.months, MONTHS, COL_ACCENT1);
       const dh = d3.select('#dr-depts'), mx = d3.max(info.topDepts, (d) => d.n) || 1;

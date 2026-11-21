@@ -98,6 +98,7 @@ assert DTYPE.itemsize == RECORD_SIZE
 # logical name -> CSV header (compared case-insensitively, spaces == underscores)
 WANTED = {
     "species":   "genus_species_ref",
+    "cdref":     "cd_ref",
     "family":    "family",
     "order":     "order",
     "class":     "class",
@@ -834,6 +835,15 @@ def main():
             log("Toponyms: {:,} communes of at least {:,} inhabitants".format(len(places["names"]), PLACE_MIN_POP))
         communes, s_commune = build_communes(s_lon, s_lat, s_loc, s_names, places, COMMUNES_JSON)
     e_codes, e_notes, e_gnotes = load_edibility(sp_d)
+    # canonical taxon key: the TAXREF code (cd_ref) most often attached to each species name ("" when unknown)
+    cdref = [""] * len(sp_d)
+    tmp = df[["species", "cdref"]]
+    tmp = tmp[(tmp["cdref"] != "") & tmp["species"].isin(set(sp_d))]
+    pos_sp = {name: i for i, name in enumerate(sp_d)}
+    for (name, code), _ in tmp.groupby(["species", "cdref"]).size().sort_values(ascending=False, kind="stable").items():
+        if not cdref[pos_sp[name]]:
+            cdref[pos_sp[name]] = str(code)
+    log("TAXREF codes: %s of %s species have a cd_ref" % ("{:,}".format(sum(1 for c in cdref if c)), "{:,}".format(len(sp_d))))
     vern = load_vernacular(sp_d)
     if vern:
         counts = np.bincount(sp[sp != SPECIES_MISSING], minlength=len(sp_d))
@@ -862,6 +872,7 @@ def main():
         "cells": cells,
         "places": places,
         "vernacular": vern,
+        "cdref": cdref,
         "chunks": chunks_meta or None,
         "year_range": [args.year_min, args.year_max],
         "dataset": args.dataset_id,

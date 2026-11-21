@@ -84,6 +84,7 @@
       initDrawer();
       initHelp();
       initUI();
+      initTheme();
 
       setLoading('Premier rendu…', 90); await tick();
       await updateAll(true);

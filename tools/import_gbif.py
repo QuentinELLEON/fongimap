@@ -113,11 +113,11 @@ def main():
     print("fetched %d occurrences, %d inside the metropolitan bounding box" % (n_all, len(rows)))
 
     # enrichment tables from FongiBase (guild / trophic by species then genus; ecoregion by département)
-    sp_info, ge_info, eco_by_dep = {}, {}, {}
+    sp_info, ge_info, eco_by_dep, cdref_of = {}, {}, {}, {}
     enrich = Path(args.enrich)
     if enrich.exists():
         import pandas as pd
-        df = pd.read_csv(enrich, usecols=["genus_species_ref", "genus_ref", "trophic_mode", "guild", "department", "ecoregion"], dtype=str, encoding="utf-8-sig")
+        df = pd.read_csv(enrich, usecols=["genus_species_ref", "genus_ref", "trophic_mode", "guild", "department", "ecoregion", "cd_ref"], dtype=str, encoding="utf-8-sig")
         modal = lambda s: s.dropna().mode().iloc[0] if s.notna().any() else ""
         g = df.dropna(subset=["guild"]).groupby("genus_species_ref")[["trophic_mode", "guild"]].agg(modal)
         sp_info = {k: (r.trophic_mode, r.guild) for k, r in g.iterrows()}
@@ -125,6 +125,8 @@ def main():
         ge_info = {k: (r.trophic_mode, r.guild) for k, r in g.iterrows()}
         e = df.dropna(subset=["ecoregion"]).groupby("department")["ecoregion"].agg(modal)
         eco_by_dep = dict(e)
+        c = df.dropna(subset=["cd_ref"]).groupby("genus_species_ref")["cd_ref"].agg(modal)
+        cdref_of = dict(c)                       # canonical TAXREF key for species that FongiBase also knows
         print("enrichment: %d species, %d genera, %d départements" % (len(sp_info), len(ge_info), len(eco_by_dep)))
 
     # département of the points without "(NN)" in stateProvince: commune polygons (pipeline/communes.py)
@@ -153,7 +155,7 @@ def main():
             troph, guild = sp_info.get(sp) or ge_info.get(genus) or ("", "")
             date = (r.get("eventDate") or "")[:10]
             w.writerow([r["key"], sp, genus, sp.split(" ", 1)[1] if " " in sp else "", r.get("family") or "", r.get("order") or "", r.get("class") or "",
-                        r.get("phylum") or "", "", troph, guild, date, "France", dep, r.get("locality") or "", eco_by_dep.get(dep, ""), "",
+                        r.get("phylum") or "", cdref_of.get(sp, ""), troph, guild, date, "France", dep, r.get("locality") or "", eco_by_dep.get(dep, ""), "",
                         "%.6f" % r["decimalLatitude"], "%.6f" % r["decimalLongitude"]])
     print("wrote %s (%d rows)" % (out, len(rows)))
 

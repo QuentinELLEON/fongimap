@@ -110,11 +110,11 @@
   // species of the current view as CSV (UTF-8 with BOM for spreadsheets); the source is repeated on every row
   function exportCSV() {
     const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
-    const rows = [['nom_francais', 'nom_latin', 'famille', 'observations', 'comestibilite_indicative', 'source']];
+    const rows = [['nom_francais', 'nom_latin', 'cd_ref_taxref', 'famille', 'observations', 'comestibilite_indicative', 'source']];
     const idx = [];
     for (let s = 0; s < DICT.species.length; s++) if (lastAgg.bySpecies[s] > 0) idx.push(s);
     idx.sort((p, r) => lastAgg.bySpecies[r] - lastAgg.bySpecies[p] || p - r);
-    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, SOURCE_LINE]));
+    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], (META.cdref && META.cdref[s]) || '', spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, SOURCE_LINE]));
     download(new Blob(['\uFEFF' + rows.map((r) => r.map(q).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'fongimap-especes-' + stamp() + '.csv');
   }
 
