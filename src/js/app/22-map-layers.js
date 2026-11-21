@@ -1,19 +1,20 @@
   // ── semantic zoom: how visible each layer is ─────────────────────────────
   function layerAlphas() {
-    const k = tf.k;
+    const k = tf.k, hc = hasCommunes();
     switch (layerMode) {
-      case 'dept': return { gridA: 0, dotA: 0 };
-      case 'grid': return { gridA: 1, dotA: 0 };
-      case 'sites': return { gridA: 0, dotA: 1 };
-      default: return { gridA: smooth(1.7, 2.8, k), dotA: smooth(5.2, 6.4, k) };
+      case 'dept': return { gridA: 0, communeA: 0, dotA: 0 };
+      case 'grid': return { gridA: 1, communeA: 0, dotA: 0 };
+      case 'communes': return { gridA: 0, communeA: hc ? 1 : 0, dotA: 0 };
+      case 'sites': return { gridA: 0, communeA: 0, dotA: 1 };
+      default: return { gridA: smooth(1.7, 2.8, k), communeA: hc ? smooth(COMMUNE_K[0], COMMUNE_K[1], k) : 0, dotA: hc ? smooth(SITE_K[0], SITE_K[1], k) : smooth(5.2, 6.4, k) };
     }
   }
 
   // one legend at a time: the layer that dominates the current view
   function renderLegend(al) {
-    const kind = al.dotA > 0.5 ? 'sites' : al.gridA > 0.5 ? 'grid' : 'dept';
+    const kind = al.dotA > 0.5 ? 'sites' : al.communeA > 0.5 ? 'commune' : al.gridA > 0.5 ? 'grid' : 'dept';
     const hint = layerMode === 'auto' && kind === 'dept' && tf.k < 2.4;
-    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(',')].join('|');
+    const key = [kind, showApprox, hint, legend.title, legend.cuts.join(','), metric, communeCuts.join(',')].join('|');
     if (key === legendKey) return;
     legendKey = key;
     const row = (swatch, label) => '<li>' + swatch + '<span>' + label + '</span></li>';
@@ -22,6 +23,12 @@
       html = '<h5>' + esc(legend.title) + '</h5><ul>' + legend.ramp.map((c, i) => row('<i class="sw" style="background:' + c + '"></i>', legend.labels[i])).join('') +
         row('<i class="sw" style="background:' + COL_ZERO + '"></i>', 'aucune observation') + '</ul>' +
         '<p class="legend-note">' + esc(legend.note) + (hint ? ' Zoomez : des hexagones puis des lieux apparaissent.' : '') + '</p>';
+    } else if (kind === 'commune') {
+      const byCount = metric === 'count';
+      html = '<h5>' + (byCount ? 'Observations par commune' : 'Observations par km²') + '</h5><ul>' +
+        communeRamp.map((c, i) => row('<i class="sw" style="background:' + c + '"></i>', communeLabels[i])).join('') +
+        row('<i class="sw" style="background:' + COL_ZERO + '"></i>', 'aucune observation') + '</ul>' +
+        '<p class="legend-note">Chaque commune est colorée selon son nombre d’observations' + (byCount ? '' : ' rapporté à sa surface') + '. Les lieux au centre de la commune n’ont pas de position plus fine : la commune est l’échelle fiable. Traits : commune &lt; département &lt; région.</p>';
     } else if (kind === 'grid') {
       html = '<h5>Observations par hexagone</h5><p class="legend-note top">Chaque hexagone mesure 10 km de large (≈ 87 km²) : plus il est foncé, plus il y a eu d’observations.</p><ul>' +
         CELL_LABELS.map((l, i) => row('<i class="sw" style="background:' + cellColour(i) + '"></i>', l)).join('') + '</ul>';
@@ -73,6 +80,7 @@
     if (!showApprox) for (let k = 0; k < nSites; k++) if (siteApprox[k]) siteTarget[k] = 0;
     cellTarget.fill(0);
     for (let k = 0; k < nSites; k++) cellTarget[siteCell[k]] += siteTarget[k];
+    updateCommunes();
   }
 
   // graduated symbols (classed sizes, explicit legend) instead of a continuous radius
@@ -105,11 +113,13 @@
   function drawLayers() {
     if (!siteShown) return;
     const al = layerAlphas();
-    deptG.style('opacity', 1 - 0.7 * Math.max(al.gridA, al.dotA));     // the choropleth recedes once finer layers take over
-    const gridVis = al.gridA * (1 - al.dotA);
+    deptG.style('opacity', 1 - 0.7 * Math.max(al.gridA, al.communeA, al.dotA));     // the choropleth recedes once finer layers take over
+    const gridVis = al.gridA * (1 - al.communeA) * (1 - al.dotA);
     $('grid-canvas').style.opacity = gridVis.toFixed(3);
+    $('commune-canvas').style.opacity = al.communeA.toFixed(3);
     $('dot-canvas').style.opacity = al.dotA.toFixed(3);
     if (gridVis > 0.01) drawGrid();
+    if (al.communeA > 0.01) drawCommunes(al); else if (visCommunes.length) { visCommunes = []; $('commune-canvas').getContext('2d').clearRect(0, 0, base.w, base.h); }
     if (al.dotA > 0.01) drawSites(); else clusters = [];
     renderLegend(al);
     updateScale(); updateLocator();

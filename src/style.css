@@ -148,7 +148,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .sp-badge { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 700 12px/1 system-ui; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
 .sp-badge i { font-style: normal; }
 .sp-main { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
-.sp-name { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-name { font-size: 12.5px; font-weight: 600; font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-name.latin { font-weight: 500; font-style: italic; }
+.sp-names { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--fg2); }
+.dr-latin { font-style: italic; color: var(--fg2); margin-top: 1px; }
+.dr-alias { font-size: 11.5px; color: var(--fg2); margin-top: 3px; }
+.dr-title.latin { font-style: italic; }
 .sp-fam { font-size: 10.5px; color: var(--fg3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sp-n { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg2); flex-shrink: 0; }
 #sp-empty { padding: 16px 14px; font-size: 12px; color: var(--fg3); line-height: 1.5; }
@@ -200,7 +205,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #map-container { position: absolute; inset: 0; overflow: hidden; }
 #map-svg { width: 100%; height: 100%; display: block; cursor: grab; }
 #map-svg:active { cursor: grabbing; }
-#grid-canvas, #dot-canvas, #label-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s var(--ease); }
+#grid-canvas, #commune-canvas, #dot-canvas, #label-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s var(--ease); }
 #label-canvas { opacity: 1; transition: none; }
 
 .dept-layer { transition: opacity .6s var(--ease); }
@@ -343,3 +348,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── commune search box (map corner) ── */
+#commune-box { position: absolute; top: 10px; left: 200px; z-index: 6; width: 230px; }
+#commune-search { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; box-shadow: var(--shadow); }
+#commune-results { list-style: none; margin-top: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-l); overflow: hidden; }
+#commune-results.hidden { display: none; }
+#commune-results li { padding: 6px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+#commune-results li span { color: var(--fg2); font-size: 11px; white-space: nowrap; }
+#commune-results li.on, #commune-results li:hover { background: var(--bg3); }
+#commune-results li.none { cursor: default; color: var(--fg2); }

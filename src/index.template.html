@@ -42,7 +42,8 @@
 
       <div class="side-panel on" id="panel-species">
         <div class="sp-top">
-          <input type="search" id="search-species" placeholder="Chercher : cèpe, Amanita, famille…" autocomplete="off" spellcheck="false" aria-label="Chercher une espèce">
+          <input type="search" id="search-species" placeholder="Chercher : cèpe, girolle, Amanita, famille…" autocomplete="off" spellcheck="false" aria-label="Chercher une espèce">
+          <div class="sp-names"><span>Nom affiché</span><div class="seg seg-small" id="seg-name" role="group" aria-label="Nom affiché en premier"><button data-v="fr" class="on">Français</button><button data-v="latin">Latin</button></div></div>
           <div id="species-active" class="hidden"></div>
           <div id="commune-active" class="hidden"></div>
           <div class="sp-bar">
@@ -105,11 +106,13 @@
         <div id="map-container">
           <svg id="map-svg"></svg>
           <canvas id="grid-canvas"></canvas>
+          <canvas id="commune-canvas"></canvas>
           <canvas id="dot-canvas"></canvas>
           <canvas id="label-canvas"></canvas>
           <div id="map-tooltip" class="tooltip hidden"></div>
           <div id="preview-tag" class="hidden"></div>
 
+          <div id="commune-box"><input type="search" id="commune-search" placeholder="Aller à une commune…" autocomplete="off" spellcheck="false" aria-label="Aller à une commune" role="combobox" aria-expanded="false" aria-controls="commune-results"><ul id="commune-results" class="hidden" role="listbox"></ul></div>
           <div id="options-wrap">
             <button type="button" id="btn-options" aria-haspopup="true">⚙ Options de la carte</button>
             <div id="options-pop" class="hidden">
@@ -118,6 +121,7 @@
                   <button data-v="auto" class="on" title="Le niveau de détail suit le zoom">Auto</button>
                   <button data-v="dept" title="Départements">Départements</button>
                   <button data-v="grid" title="Hexagones de 10 km">Hexagones</button>
+                  <button data-v="communes" title="Limites et couleurs des communes">Communes</button>
                   <button data-v="sites" title="Lieux de récolte">Lieux</button>
                 </div>
               </div>

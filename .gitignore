@@ -17,3 +17,8 @@ data_raw/*.csv
 .idea/
 .DS_Store
 Thumbs.db
+
+# raw inputs fetched by tools/fetch_raw.py or tools/prepare_*.py (checksums recorded there)
+data_raw/a_com2025_topo.json
+data_raw/*.jsonl
+data_raw/wikidata_cache.json

@@ -41,11 +41,13 @@
       }, setLoading);
       window.FMAP_DATA = null;
       spFamily = st.spFamily; dataStats = st;
+      initNames();
       META.yearSpan = st.ymax ? st.ymin + '–' + st.ymax : '';
 
       setLoading('Préparation de la carte…', 75); await tick();
       buildMap();
       initSites();
+      initCommunes();
       buildSidebar();
       initBrowser();
       initDrawer();

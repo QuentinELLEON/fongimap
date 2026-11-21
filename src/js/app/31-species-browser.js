@@ -1,18 +1,26 @@
   // ── species browser: searchable, sortable list that answers "which fungi here / now / edible" ──
   // The list counts records passing every filter EXCEPT the species filter (see aggregate), so it follows the
   // département, period, month, edibility and guild filters while still showing the other species.
+  // « aussi appelé : X » when the species was found through a French alias rather than its main name
+  const hintFor = (s, via) => { const n = frOf.get(s)[via - 1]; return n ? 'aussi appelé : ' + n : ''; };
   const ROW_H = 46, PAGE = 60;
   const BR = { query: '', sort: 'count', limit: PAGE, timer: 0, rows: [], total: 0 };
   let alphaRank = null, familyLower = [];
   let previewTimer = 0, savedTarget = null, savedByDept = null;
 
-  function initBrowser() {
-    const idx = d3.range(DICT.species.length).sort((p, q) => DICT.species[p].localeCompare(DICT.species[q], 'fr'));
+  // alphabetical rank of every species by its displayed name (French or Latin, per the current preference)
+  function computeAlphaRank() {
+    const names = DICT.species.map((_, s) => FMAP_CORE.searchKey(displayName(s)));
+    const idx = d3.range(DICT.species.length).sort((p, q) => (names[p] < names[q] ? -1 : names[p] > names[q] ? 1 : p - q));
     alphaRank = new Int32Array(DICT.species.length);
     idx.forEach((s, r) => { alphaRank[s] = r; });
+  }
+
+  function initBrowser() {
+    computeAlphaRank();
     familyLower = DICT.family.map((f) => String(f).toLowerCase());
     const input = $('search-species');
-    const apply = () => { BR.query = input.value.trim().toLowerCase(); BR.limit = PAGE; renderBrowser(lastAgg); $('sp-scroll').scrollTop = 0; };
+    const apply = () => { BR.query = input.value.trim(); BR.limit = PAGE; renderBrowser(lastAgg); $('sp-scroll').scrollTop = 0; };
     input.addEventListener('input', () => { clearTimeout(BR.timer); BR.timer = setTimeout(apply, 150); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { clearTimeout(BR.timer); apply(); if (BR.rows[0]) pickSpecies(BR.rows[0].idx); }
@@ -27,27 +35,37 @@
     $('sp-more').addEventListener('click', () => { BR.limit += PAGE; renderBrowser(lastAgg); });
     $('sp-multi').addEventListener('click', () => {
       if (BR.total < 2) return;
-      const all = []; for (let s = 0; s < DICT.species.length; s++) if (lastAgg.bySpecies[s] > 0 && matchesQuery(s)) all.push(s);
+      ensureMatches();
+      const all = []; for (let s = 0; s < DICT.species.length; s++) if (lastAgg.bySpecies[s] > 0 && BR.matches.has(s)) all.push(s);
       setSpecies(all, '« ' + $('search-species').value.trim() + ' » (' + fmt(all.length) + ' espèces)');
       scheduleUpdate();
     });
     $('species-active').addEventListener('click', () => { clearSpecies(); closeDrawer(); scheduleUpdate(); });
     $('commune-active').addEventListener('click', () => { state.commune = -1; scheduleUpdate(); });
     $('sp-list').addEventListener('mouseleave', endPreview);
+    $('seg-name').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b.dataset.v !== namePref) setNamePref(b.dataset.v); });
+    document.querySelectorAll('#seg-name button').forEach((b) => b.classList.toggle('on', b.dataset.v === namePref));
   }
 
-  const matchesQuery = (s) => !BR.query || speciesLower[s].includes(BR.query) || (spFamily[s] !== MISSING && familyLower[spFamily[s]].includes(BR.query));
+  // species matching the typed query (Latin, French name, alias, family), computed once per query
+  function ensureMatches() {
+    if (BR.matchesFor === BR.query) return;
+    BR.matchesFor = BR.query;
+    BR.matches = BR.query ? new Map(Array.from(FMAP_CORE.search(searchIndex, BR.query) || []).map((m) => [m.s, m])) : null;
+  }
 
   // rebuild the list: keyed D3 join, FLIP re-ranking (rows glide to their new rank), animated counts
   function renderBrowser(a) {
     if (!a) return;
     const L = DICT.species.length, counts = a.bySpecies;
-    const idx = [];
-    for (let s = 0; s < L; s++) if (counts[s] > 0 && matchesQuery(s)) idx.push(s);
+    ensureMatches();
+    const M = BR.matches, idx = [];
+    for (let s = 0; s < L; s++) if (counts[s] > 0 && (!M || M.has(s))) idx.push(s);
     if (BR.sort === 'alpha') idx.sort((p, q) => alphaRank[p] - alphaRank[q]);
+    else if (M) idx.sort((p, q) => M.get(p).tier - M.get(q).tier || counts[q] - counts[p] || alphaRank[p] - alphaRank[q]);   // best match first, then most observed
     else idx.sort((p, q) => counts[q] - counts[p] || alphaRank[p] - alphaRank[q]);
     BR.total = idx.length;
-    const rows = idx.slice(0, BR.limit).map((s, r) => ({ idx: s, rank: r, name: DICT.species[s], fam: spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', n: counts[s], edi: ediOf[s] }));
+    const rows = idx.slice(0, BR.limit).map((s, r) => ({ idx: s, rank: r, name: displayName(s), fr: showsFrench(s), latin: DICT.species[s], fam: spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', hint: (M && M.get(s).via >= 1 && frOf.has(s) && M.get(s).tier > 0 ? hintFor(s, M.get(s).via) : ''), n: counts[s], edi: ediOf[s] }));
     BR.rows = rows;
 
     $('sp-count').textContent = fmt(BR.total) + (BR.total > 1 ? ' espèces · ' + (BR.sort === 'alpha' ? 'par ordre alphabétique' : 'triées par observations') : ' espèce') + (BR.query ? ' · « ' + $('search-species').value.trim() + ' »' : '');
@@ -88,10 +106,10 @@
       (ex) => ex.filter(':not(.leaving)').classed('leaving', true).style('pointer-events', 'none').transition('x').duration(DUR / 2).style('opacity', 0).remove());
     sel.style('top', (d) => d.rank * ROW_H + 'px')
       .classed('sel', (d) => state.speciesSet.has(d.idx)).attr('aria-pressed', (d) => state.speciesSet.has(d.idx))
-      .attr('title', (d) => d.name + ' — ' + EDI[d.edi].label);
+      .attr('title', (d) => d.name + (d.fr ? ' (' + d.latin + ')' : '') + ' — ' + EDI[d.edi].label).attr('aria-label', (d) => d.name + (d.fr ? ', ' + d.latin : '') + ', ' + fmt(d.n) + ' observations, ' + EDI[d.edi].label);
     sel.select('.sp-badge').style('background', (d) => EDI[d.edi].colour).style('color', (d) => (d.edi === 0 ? '#5a4e3a' : '#fff')).select('i').text((d) => EDI[d.edi].icon);
-    sel.select('.sp-name').text((d) => d.name);
-    sel.select('.sp-fam').text((d) => d.fam);
+    sel.select('.sp-name').classed('latin', (d) => !d.fr).text((d) => d.name);
+    sel.select('.sp-fam').html((d) => (d.fr ? '<i>' + esc(d.latin) + '</i>' : '') + (d.fr && d.fam ? ' · ' : '') + esc(d.fam) + (d.hint ? ' · ' + esc(d.hint) : ''));
     sel.select('.sp-n').each(function (d) { tweenNumber(this, d.n); });
     // FLIP steps 2-3 (Last, Invert, Play): rows that moved start at their old place and glide to the new one
     if (DUR) {
@@ -114,7 +132,7 @@
       previewing = true;
       siteFrom.set(siteShown); siteTarget.set(res.siteCount);
       finishSites(); tipCache.clear(); tipTok++; updateMap({ byDept: res.byDept }); startSiteAnim(false);
-      $('preview-tag').innerHTML = 'Aperçu : <em>' + esc(DICT.species[idx]) + '</em>';
+      $('preview-tag').innerHTML = 'Aperçu : ' + nameHtml(idx);
       $('preview-tag').classList.remove('hidden');
     }, 140);
   }
