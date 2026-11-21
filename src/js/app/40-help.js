@@ -27,6 +27,9 @@
       b.addEventListener('click', () => applyStarter(st.run()));
       $('help-starters').appendChild(b);
     });
+    updateHelpData();
+  }
+  function updateHelpData() {
     const located = dataStats.located, approxN = dataStats.approxN;
     $('help-data').textContent = fmt(N) + ' observations' + (META.yearSpan ? ' (' + META.yearSpan + ')' : '') + ' ; ' + Math.round(100 * located / N) + ' % ont une position sur la carte, dont ' +
       Math.round(100 * approxN / Math.max(1, located)) + ' % seulement au centre de la commune (symboles plus pâles).';

@@ -183,6 +183,22 @@
     });
   }
 
+  // ── datasets ─────────────────────────────────────────────────────────────
+  const currentDataset = () => (window.FMAP_DATASETS || []).filter((e) => e.id === (window.FMAP_DS_ID || 'fongibase'))[0] || null;
+  function initDatasets() {
+    const list = window.FMAP_DATASETS || [], cur = currentDataset(), sel = $('sel-dataset');
+    if (list.length > 1) {
+      sel.innerHTML = list.map((e) => '<option value="' + esc(e.id) + '"' + (cur && cur.id === e.id ? ' selected' : '') + '>' + esc(e.title) + (e.synthetic ? ' (synthétique)' : '') + '</option>').join('');
+      sel.classList.remove('hidden');
+      sel.addEventListener('change', () => { location.href = location.pathname + (sel.value === 'fongibase' ? '' : '?ds=' + encodeURIComponent(sel.value)) + location.hash; });   // a full reload: dictionaries and places differ per dataset
+    }
+    if (cur && cur.synthetic) $('ds-banner').classList.remove('hidden');
+    if (cur && cur.id !== 'fongibase') {
+      $('ds-credit').textContent = 'Jeu « ' + cur.title + ' » : ' + (cur.credit || cur.source || '') + (cur.licence ? ' — ' + cur.licence : '') + (cur.updated ? ' — mis à jour le ' + cur.updated : '') + '.';
+      document.title = cur.title + ' — FongiMap';
+    }
+  }
+
   function initUI() {
     initMapKeyboard();
     $('btn-copylink').addEventListener('click', copyLink);

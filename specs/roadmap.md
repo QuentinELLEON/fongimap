@@ -32,3 +32,6 @@ Replaces `tasks.md` (historical). Each item has a GitHub issue (body = the detai
 - `context.md` §7.x updated with what/why and measured numbers; `architecture.md` updated if the structure changed.
 - No new network dependency at runtime; `file://` still works for the standalone build.
 - Accessibility: no new non-focusable interactive element, contrast ≥ AA.
+
+## Status (21 Nov 2026)
+All five issues have an implementation on the integration branch `integration/cartographers-feedback` (see `context.md` §9 for what was done, deviations and what is left): #3 done (coverage gap: 129 of the top-500 species still need a reviewed name), #1 done, #5 partly (engine / worker / tests / CI done; package split with canonical keys, esbuild and folder moves not done), #2 done except i18n and dark theme, #4 infrastructure done (selector, chunked progressive loading, remote contract) but no real second dataset yet: see the research PR.

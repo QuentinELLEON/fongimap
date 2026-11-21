@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent
 MAX_KB = 1.2 * 1024  # NFR-03.1
 
 
-CORE_FILES = ["engine.js", "engine-client.js", "search.js", "urlstate.js"]          # order matters only for readability: everything is resolved at call time
+CORE_FILES = ["engine.js", "engine-client.js", "search.js", "urlstate.js", "engine-remote.js"]          # order matters only for readability: everything is resolved at call time
 
 
 def concat_js(folder, names=None):

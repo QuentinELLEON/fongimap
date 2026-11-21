@@ -9,7 +9,7 @@
 (function (root) {
   'use strict';
   const core = root.FMAP_CORE = root.FMAP_CORE || {};
-  const METHODS = ['init', 'filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'info'];
+  const METHODS = ['init', 'append', 'filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'info'];
 
   // ArrayBuffers of typed arrays found at the top level of a result (moved, not copied, to the other thread)
   core.collectTransfers = function (r) {
@@ -74,6 +74,7 @@
 
   // opts: { worker: boolean, workerSource: string, yieldFn, onProgress(msg, pct) }
   core.createEngineClient = async function (opts) {
+    if (opts.remote && core.createRemoteClient) return core.createRemoteClient(opts.remote);        // records stay on the server
     if (opts.worker && opts.workerSource && typeof Worker !== 'undefined' && typeof Blob !== 'undefined') {
       try { return await workerClient(opts); } catch (e) { if (typeof console !== 'undefined') console.warn('FongiMap: Worker indisponible, moteur sur le fil principal.', e && e.message); }
     }

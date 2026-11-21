@@ -50,7 +50,19 @@
 
   function createEngine() {
     let N = 0, c = null, failMask = null, siteOf = null, nSites = 0, S = null, ediOf = null, drawn = null, nSpeciesDict = 0, ready = false;
-    let yieldFn = null;
+    let yieldFn = null, key2site = null, run = null;
+    // site, family and statistics of records [from, to)
+    const indexRecords = (from, to) => {
+      for (let i = from; i < to; i++) {
+        if (c.lonQ[i] !== COORD_MISSING) {
+          const k = key2site.get(c.lonQ[i] * 65536 + c.latQ[i]);
+          if (k !== undefined) { siteOf[i] = k; run.located++; if (S.approx[k]) run.approxN++; }
+        }
+        const sp = c.species[i]; if (sp < SP_MISSING && run.spFamily[sp] === MISSING) run.spFamily[sp] = c.family[i];
+        const y = c.year[i]; if (y) { if (y < run.ymin) run.ymin = y; if (y > run.ymax) run.ymax = y; }
+      }
+    };
+    const summary = () => ({ N, ymin: run.ymin, ymax: run.ymax, located: run.located, approxN: run.approxN, spFamily: run.spFamily.slice() });
     const step = async (msg, pct, progress) => { if (progress) progress(msg, pct); if (yieldFn) await yieldFn(); };
 
     const engine = {
@@ -61,6 +73,7 @@
         N = p.N; S = p.sites || { lon: [], lat: [], approx: [], cell: [], commune: [] }; nSites = S.lon.length;
         nSpeciesDict = p.nSpecies;
         let raw = p.raw;
+        if (!raw && p.N === 0) raw = new Uint8Array(0);
         if (!raw) {
           await step('Décodage…', 15, progress);
           const packed = p.packed || decodeBase64(p.b64);
@@ -76,21 +89,26 @@
         if (p.edible) for (let i = 0; i < p.edible.length; i++) ediOf[i] = p.edible.charCodeAt(i) - 48;
 
         // record -> site (exact position) and species -> family, year span, located share: one pass each
-        const key2site = new Map();
+        key2site = new Map();
         for (let k = 0; k < nSites; k++) key2site.set(S.lon[k] * 65536 + S.lat[k], k);
         siteOf = new Int32Array(N).fill(-1);
-        const spFamily = new Uint8Array(65536).fill(MISSING);
-        let ymin = 9999, ymax = 0, located = 0, approxN = 0;
-        for (let i = 0; i < N; i++) {
-          if (c.lonQ[i] !== COORD_MISSING) {
-            const k = key2site.get(c.lonQ[i] * 65536 + c.latQ[i]);
-            if (k !== undefined) { siteOf[i] = k; located++; if (S.approx[k]) approxN++; }
-          }
-          const sp = c.species[i]; if (sp < SP_MISSING && spFamily[sp] === MISSING) spFamily[sp] = c.family[i];
-          const y = c.year[i]; if (y) { if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
-        }
+        run = { spFamily: new Uint8Array(65536).fill(MISSING), ymin: 9999, ymax: 0, located: 0, approxN: 0 };
+        indexRecords(0, N);
         ready = true;
-        return { N, ymin, ymax, located, approxN, spFamily };
+        return summary();
+      },
+
+      // add records (a later chunk of the same dataset: same dictionaries and sites, append-only). Columns grow in place.
+      async append(p) {
+        const raw = p.raw || root.fflate.unzlibSync(p.packed || decodeBase64(p.b64));
+        if (raw.length % REC !== 0) throw new Error('Morceau de données invalide.');
+        const n = raw.length / REC, add = splitColumns(raw, n), N0 = N;
+        const merged = {};
+        Object.keys(c).forEach((k) => { merged[k] = new c[k].constructor(N0 + n); merged[k].set(c[k]); merged[k].set(add[k], N0); });
+        c = merged; N = N0 + n; failMask = new Uint16Array(N);
+        const so = new Int32Array(N).fill(-1); so.set(siteOf); siteOf = so;
+        indexRecords(N0, N);
+        return summary();
       },
 
       // one pass -> failMask, one pass -> counts. `st`: { speciesSet, phylumSet, guildSet, trophicSet, ecoregionSet, monthSet, deptSet: number[],
@@ -220,7 +238,7 @@
       },
 
       // cheap probes used by tests / diagnostics
-      info() { return { ready, N, nSites }; },
+      info() { return Object.assign({ ready, N, nSites }, ready ? summary() : {}); },
     };
     return engine;
   }
