@@ -2,7 +2,8 @@
 #
 # One-time setup (GitHub: Settings > Secrets and variables > Actions): add the secret NETLIFY_AUTH_TOKEN (your Netlify personal
 # access token), as a repository secret or as a secret of the "production" environment. Never commit a token.
-# Optional repository variables: NETLIFY_SITE_ID (the site's API ID, used as is) or NETLIFY_SITE (site name, default "fongimap").
+# The site is identified by its ID (below; the repository variable NETLIFY_SITE_ID overrides it). If that ID is emptied, the
+# workflow falls back to looking up the site named NETLIFY_SITE (default "fongimap").
 # The Netlify CLI no longer accepts a site NAME for --site (it answers "Not Found"): the workflow finds the ID of the named
 # site through the Netlify API with your token, unless NETLIFY_SITE_ID is set.
 #
@@ -47,7 +48,7 @@ jobs:
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE: ${{ vars.NETLIFY_SITE || 'fongimap' }}
-      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || 'eab05a9f-6717-4827-b598-4f58b0dcb1f5' }}   # ID of the "fongimap" site (not a secret); the repository variable overrides it
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
