@@ -10,7 +10,7 @@
 stages: [verify, deploy]
 
 default:
-  interruption: true
+  interruptible: true            # a newer pipeline on the same branch cancels older verify jobs (never the deploy: see below)
 
 variables:
   GIT_LFS_SKIP_SMUDGE: "1"        # data_raw/*.csv is stored in Git LFS (219 MB) and is not needed here
@@ -44,6 +44,7 @@ node-tests:
 deploy-netlify:
   stage: deploy
   image: node:22-slim
+  interruptible: false             # a deploy that has started always finishes
   needs: [assets-up-to-date, node-tests]
   environment:
     name: production
