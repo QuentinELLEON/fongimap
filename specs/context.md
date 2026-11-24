@@ -317,4 +317,4 @@ Branch `feat/open-issues-9-10-12-13-14`. Requested: do the five open issues in o
 
 ## 14. Third dataset: GBIF with positions accurate to 100 m (24 November 2026)
 
-Requested: a dataset more precise than FongiBase about where mushrooms were found. Measured and chosen in `datasets.md` §9: GBIF, macrofungi, 1990 →, CC0 / CC-BY, uncertainty ≤ 100 m, 26 813 occurrences. Built with the existing importer (no code change) and added to the registry; the main dataset and the two other files are unchanged (regression anchors intact, 23 tests pass).
+Requested: a dataset more precise than FongiBase about where mushrooms were found. Measured and chosen in `datasets.md` §9: GBIF, macrofungi, 1990 →, CC0 / CC-BY, uncertainty ≤ 100 m, 26 813 occurrences. Made the default dataset on request (same day): one constant, exports credit the dataset in use, footer and help text name both sources. Built with the existing importer (no code change) and added to the registry; the main dataset and the two other files are unchanged (regression anchors intact, 23 tests pass).

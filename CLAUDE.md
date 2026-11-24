@@ -40,6 +40,7 @@ After editing anything in `src/`, rebuild with `python tools/build_web.py`: the 
 - Debug hook: `window.FMAP_APP` (state, `perf` incl. `perf.draw`, `viewAt`, `pickSpecies`, `NEAR`, `setMe`…).
 
 ## Regression anchors (must not change unexplained)
+Default dataset (`window.FMAP_DS_DEFAULT` in `index.html`): **GBIF positions précises**, 26 813 observations · 2 602 species · 96 départements, 99 % located, 0 % approximate. FongiBase (`?ds=fongibase`) anchors:
 1 043 262 observations · 11 618 taxa · 96 départements · Pas-de-Calais 78 199 · Valbonne (06): 302 observations, 180 species, 7 places.
 Performance reference (1 M rows, Chromium): page ready ≈ 1 s, filter + render ≈ 22–65 ms; a redraw at the deepest zoom with forests ≈ 65–90 ms once per gesture (`specs/performance.md`).
 

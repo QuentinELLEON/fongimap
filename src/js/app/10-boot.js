@@ -58,7 +58,7 @@
 
       setLoading('Démarrage du moteur…', 10); await tick();
       const useWorker = !/[?&]worker=0\b/.test(location.search);        // ?worker=0 forces the main-thread engine
-      const ds = (window.FMAP_DATASETS || []).filter((e) => e.id === (window.FMAP_DS_ID || 'fongibase'))[0];
+      const ds = (window.FMAP_DATASETS || []).filter((e) => e.id === (window.FMAP_DS_ID || DEFAULT_DS))[0];
       const remote = ds && ds.mode === 'remote' && ds.api ? { url: ds.api, dataset: ds.id } : null;
       engine = await FMAP_CORE.createEngineClient({ remote, worker: useWorker, workerSource: workerSource(), yieldFn: tick, onProgress: setLoading });
       const S = META.sites || { lon: [], lat: [], approx: [], cell: [], commune: [] };

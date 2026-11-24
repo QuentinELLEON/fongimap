@@ -4,6 +4,8 @@ Carte interactive, **hors-ligne et sans serveur**, des 1 043 262 observations fo
 France (1708–2021) de l'extrait FongiBase — Gautier et al. 2022
 ([Zenodo 17158524](https://zenodo.org/records/17158524), CC-BY 4.0).
 
+**Jeu de données par défaut** : « GBIF — positions précises (≤ 100 m) » (26 813 observations de macromycètes depuis 1990, CC0 / CC-BY). FongiBase et le jeu GBIF récent restent disponibles dans le sélecteur de l’en-tête ou avec `index.html?ds=fongibase`. Pour changer le défaut : `window.FMAP_DS_DEFAULT` dans `index.html`.
+
 Livrable : **un dossier** à garder tel quel — `index.html` (petite page d’entrée) et `assets/` : `css/`, `js/` (application, moteur, D3, fond de carte) et `data/` (`data.js`, `geo-communes.js` — limites communales chargées au zoom —, `datasets.js` — liste des jeux de données —, jeux supplémentaires).
 Double-clic sur `index.html` (protocole `file://`, aucune connexion requise ; seules deux fonctions facultatives, signalées dans l’interface, interrogent des services en ligne : couches IGN aux derniers zooms, humidité récente dans « Autour de moi »).
 
