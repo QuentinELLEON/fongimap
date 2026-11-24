@@ -2,7 +2,10 @@
 #
 # One-time setup (GitHub: Settings > Secrets and variables > Actions): add the secret NETLIFY_AUTH_TOKEN (your Netlify personal
 # access token), as a repository secret or as a secret of the "production" environment. Never commit a token.
-# Optional repository variable NETLIFY_SITE: site name or ID, defaults to "fongimap".
+# The site is identified by its ID (below; the repository variable NETLIFY_SITE_ID overrides it). If that ID is emptied, the
+# workflow falls back to looking up the site named NETLIFY_SITE (default "fongimap").
+# The Netlify CLI no longer accepts a site NAME for --site (it answers "Not Found"): the workflow finds the ID of the named
+# site through the Netlify API with your token, unless NETLIFY_SITE_ID is set.
 #
 # What is published: index.html + assets/ only (the application and its datasets). Sources, tools, tests, specs and raw data
 # stay out of the site. Nothing is built here: the committed assets are checked to match src/ (see ci.yml), then uploaded.
@@ -45,6 +48,7 @@ jobs:
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE: ${{ vars.NETLIFY_SITE || 'fongimap' }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || 'eab05a9f-6717-4827-b598-4f58b0dcb1f5' }}   # ID of the "fongimap" site (not a secret); the repository variable overrides it
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -57,5 +61,25 @@ jobs:
           mkdir public && cp -r index.html assets public/
           test -f public/assets/data/data.js && test -f public/assets/js/app.js     # refuse to publish an incomplete site
           du -sh public
+      - name: Find the ID of the Netlify site
+        id: site
+        run: |
+          set -euo pipefail
+          if [ -n "${NETLIFY_SITE_ID:-}" ]; then echo "id=$NETLIFY_SITE_ID" >> "$GITHUB_OUTPUT"; exit 0; fi
+          found=""; total=0
+          for page in 1 2 3 4 5; do
+            json=$(curl -sS --fail-with-body -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" "https://api.netlify.com/api/v1/sites?filter=all&per_page=100&page=$page")               || { echo "::error::The Netlify API refused the token (is NETLIFY_AUTH_TOKEN a valid personal access token?)"; exit 1; }
+            n=$(jq 'length' <<<"$json"); total=$((total + n))
+            found=$(jq -r --arg n "$NETLIFY_SITE" '[.[] | select(.name == $n or .url == ("https://" + $n + ".netlify.app") or .ssl_url == ("https://" + $n + ".netlify.app"))][0].id // empty' <<<"$json")
+            if [ -n "$found" ] || [ "$n" -lt 100 ]; then break; fi
+          done
+          if [ -z "$found" ]; then
+            echo "::error::No Netlify site named '$NETLIFY_SITE' among the $total site(s) this token can see. Check the site name in Netlify (Site configuration > Site name), that the token belongs to the account or team that owns it, or set the repository variable NETLIFY_SITE_ID / NETLIFY_SITE."
+            exit 1
+          fi
+          echo "Found site '$NETLIFY_SITE': $found"
+          echo "id=$found" >> "$GITHUB_OUTPUT"
       - name: Deploy to Netlify (production)
-        run: npx --yes netlify-cli@latest deploy --prod --dir=public --site="$NETLIFY_SITE" --message="GitHub ${GITHUB_SHA::7} ${GITHUB_REF_NAME}"
+        env:
+          SITE_ID: ${{ steps.site.outputs.id }}
+        run: npx --yes netlify-cli@latest deploy --prod --dir=public --site="$SITE_ID" --message="GitHub ${GITHUB_SHA::7} ${GITHUB_REF_NAME}"
