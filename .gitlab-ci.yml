@@ -1,0 +1,63 @@
+# GitLab pipeline: check the code, then publish the static site to Netlify when something is merged into the default branch.
+#
+# One-time setup (GitLab: Settings > CI/CD > Variables), never commit a token:
+#   NETLIFY_AUTH_TOKEN   your Netlify personal access token   (Masked; also Protected if `main` is a protected branch)
+#   NETLIFY_SITE         optional, defaults to the site name "fongimap" (a site name or a site ID both work)
+#
+# What is published: index.html + assets/ only (the application and its datasets). Sources, tools, tests, specs and raw
+# data stay out of the site. The site is fully static and works from any folder, like the double-click version.
+
+stages: [verify, deploy]
+
+default:
+  interruptible: true            # a newer pipeline on the same branch cancels older verify jobs (never the deploy: see below)
+
+variables:
+  GIT_LFS_SKIP_SMUDGE: "1"        # data_raw/*.csv is stored in Git LFS (219 MB) and is not needed here
+  NETLIFY_SITE: "fongimap"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+
+# The browser files under assets/ are generated from src/: they must be committed up to date.
+assets-up-to-date:
+  stage: verify
+  image: python:3.11-slim
+  script:
+    - python tools/build_web.py --out "$CI_PROJECT_DIR/.fresh" > /dev/null
+    - |
+      for f in css/app.css js/app.js js/core.js js/worker-source.js js/geo-france.js; do
+        diff -q ".fresh/assets/$f" "assets/$f" || { echo "assets/$f is stale: run  python tools/build_web.py  and commit"; exit 1; }
+      done
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+node-tests:
+  stage: verify
+  image: node:22-slim
+  script:
+    - node --test "tests/*.test.js"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Runs only for a pipeline on the default branch, i.e. right after a merge (or any push) to main.
+deploy-netlify:
+  stage: deploy
+  image: node:22-slim
+  interruptible: false             # a deploy that has started always finishes
+  needs: [assets-up-to-date, node-tests]
+  environment:
+    name: production
+    url: https://fongimap.netlify.app
+  resource_group: netlify-production        # two merges in a row deploy one after the other, never at the same time
+  before_script:
+    - test -n "$NETLIFY_AUTH_TOKEN" || { echo "NETLIFY_AUTH_TOKEN is not set (Settings > CI/CD > Variables)"; exit 1; }
+    - npm install --global --no-audit --no-fund netlify-cli
+  script:
+    - rm -rf public && mkdir public
+    - cp -r index.html assets public/
+    - test -f public/assets/data/data.js && test -f public/assets/js/app.js     # refuse to publish an incomplete site
+    - du -sh public
+    - netlify deploy --prod --dir=public --site="$NETLIFY_SITE" --message="GitLab $CI_COMMIT_SHORT_SHA $CI_COMMIT_TITLE"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

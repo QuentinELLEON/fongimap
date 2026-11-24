@@ -20,6 +20,7 @@ node tools/check_file_url.js               # real file:// load in headless Chrom
 node tools/check_a11y.js                   # axe-core on 7 screens (npm install --no-save axe-core first); 0 serious/critical expected
 ```
 Requirements: Python 3.9+, pandas, numpy; Node 22+ for the tests and checks. Run `python tools/fetch_raw.py --what all` for the raw inputs. CI builds the assets, fails when the committed `assets/` are stale with respect to `src/` (run `python tools/build_web.py` and commit), and runs the tests. Other datasets: `python tools/import_gbif.py` then `python tools/build_data.py --csv … --dataset-id … --chunks 3` (see `specs/datasets.md`).
+Deployment: `.gitlab-ci.yml` checks the assets and the tests, then (default branch only) publishes `index.html` + `assets/` to the Netlify site `fongimap`; it needs the masked CI/CD variable `NETLIFY_AUTH_TOKEN` (never commit a token).
 After editing anything in `src/`, rebuild with `python tools/build_web.py`: the browser loads `assets/`, not `src/`.
 
 ## Hard constraints (do not break without an ADR)

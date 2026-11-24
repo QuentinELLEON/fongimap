@@ -157,3 +157,8 @@ node tools/bench_engine.js             # mesures de performance (voir specs/perf
 - **Moteur** : `src/js/core/` (sans DOM, testé sous Node) tourne dans un Web Worker (vérifié en `file://` sur Chrome et Edge) ; `?worker=0` force le fil principal ; `?verify=1` contrôle la somme de contrôle des données.
 - **Fluidité** : pendant un glisser ou un zoom, les calques sont déplacés par le navigateur (transformation CSS) et redessinés quand le geste s’arrête ; les couches IGN ne chargent rien en mouvement. Un moteur distant (`tools/serve_remote.js`) montre le contrat HTTP d'un futur serveur.
 - Documentation : `specs/README.md` (index), `specs/architecture.md`, `specs/roadmap.md`, `specs/performance.md`, `specs/context.md` §8–9.
+
+## Déploiement (GitLab → Netlify)
+
+`.gitlab-ci.yml` : à chaque fusion sur la branche principale, le pipeline vérifie que `assets/` est à jour et lance les tests, puis publie `index.html` et `assets/` (rien d’autre) sur le site Netlify **fongimap** avec la CLI Netlify.
+À faire une fois dans GitLab (Settings → CI/CD → Variables) : ajouter `NETLIFY_AUTH_TOKEN` (votre jeton d’accès personnel Netlify), en **Masked** et **Protected**. `NETLIFY_SITE` vaut `fongimap` par défaut (nom ou identifiant du site). Ne jamais écrire le jeton dans le dépôt.
