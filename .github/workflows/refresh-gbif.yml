@@ -26,7 +26,7 @@ jobs:
         run: python tools/import_gbif.py --from-year 2022 --out test_data/gbif_fr.csv ${{ inputs.allow_nc && '--allow-nc' || '' }}
       - name: Build the dataset (chunked by period)
         run: >
-          python build.py --csv test_data/gbif_fr.csv --dataset-id gbif_fr_recent --chunks 3 --year-min 2022 --year-max "$(date -u +%Y)"
+          python tools/build_data.py --csv test_data/gbif_fr.csv --dataset-id gbif_fr_recent --chunks 3 --year-min 2022 --year-max "$(date -u +%Y)"
           --title "GBIF - champignons de France depuis 2022" --credit "GBIF.org, occurrences Fungi France (macromycetes)"
           --licence "CC0 / CC-BY 4.0" --source https://www.gbif.org --updated "$(date -u +%F)" --out dist-gbif
       - uses: actions/upload-artifact@v4

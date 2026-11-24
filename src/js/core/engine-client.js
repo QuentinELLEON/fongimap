@@ -9,7 +9,7 @@
 (function (root) {
   'use strict';
   const core = root.FMAP_CORE = root.FMAP_CORE || {};
-  const METHODS = ['init', 'append', 'filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'info'];
+  const METHODS = ['init', 'append', 'filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'nearby', 'info'];
 
   // ArrayBuffers of typed arrays found at the top level of a result (moved, not copied, to the other thread)
   core.collectTransfers = function (r) {

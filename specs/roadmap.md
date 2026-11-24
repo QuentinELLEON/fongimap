@@ -38,3 +38,6 @@ All five issues have an implementation on the integration branch `integration/ca
 
 ## Status (updated after the second round)
 #1, #2 (except axe-core and the usability test), #3 and #4 (second dataset integrated: GBIF France macrofungi since 2022) are implemented on `main`; #5 is implemented except the items listed in `architecture.md` §9 (shared taxa table, versioned header, layout reorganisation, esbuild — the last two decided against). See `context.md` §11 for the remaining list.
+
+## Status (24 November 2026, branch `feat/open-issues-9-10-12-13-14`)
+Issues #10 (clean-up and split deliverable), #12 (performance at deep zoom), #13 (side panel toggle) and #14 ("Autour de moi") are implemented; #9 is a checklist: the items doable without third parties were done (axe-core audit, `file://` worker check on Chrome and Edge, versioned format header), the rest stays open with its reason. See `context.md` §13.

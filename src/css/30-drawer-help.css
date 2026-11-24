@@ -1,0 +1,68 @@
+/* ── DRAWER (species details on demand) ── */
+#drawer {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 336px; z-index: 20; overflow-y: auto;
+  background: var(--bg); border-left: 1px solid var(--border); box-shadow: var(--shadow-l);
+  transform: translateX(105%); transition: transform .45s var(--ease);
+  scrollbar-width: thin;
+}
+#map-container.drawer-open #drawer { transform: none; }
+#drawer-close { position: absolute; top: 8px; right: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(255,255,255,.85); font-size: 18px; line-height: 1; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s var(--ease); }
+#drawer-close:hover { transform: rotate(90deg); }
+.dr-photo { position: relative; height: 170px; overflow: hidden; }
+.dr-photo svg, .dr-photo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.dr-photo figcaption { position: absolute; left: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.9); background: rgba(0,0,0,.35); padding: 2px 8px; border-radius: 9px; }
+.dr-body { padding: 14px 16px 22px; }
+.dr-body > * { animation: fadeUp .5s var(--ease) both; }
+.dr-body > *:nth-child(2) { animation-delay: .05s; } .dr-body > *:nth-child(3) { animation-delay: .1s; }
+.dr-body > *:nth-child(4) { animation-delay: .15s; } .dr-body > *:nth-child(5) { animation-delay: .2s; }
+.dr-body > *:nth-child(6) { animation-delay: .25s; } .dr-body > *:nth-child(7) { animation-delay: .3s; }
+.dr-title { font-size: 17px; font-style: italic; line-height: 1.25; }
+.dr-tax { font-size: 11px; color: var(--fg3); margin: 3px 0 10px; line-height: 1.5; }
+.dr-edi { display: flex; gap: 10px; align-items: flex-start; border-radius: 8px; padding: 9px 11px; font-size: 12px; line-height: 1.45; border-left: 5px solid var(--edi, var(--muted)); background: color-mix(in srgb, var(--edi, #999) 13%, var(--bg)); }
+.dr-edi b { display: block; font-size: 13px; }
+.dr-edi small { display: block; margin-top: 4px; color: var(--fg2); font-size: 10.5px; }
+.dr-figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+.dr-fig { background: var(--bg2); border-radius: 8px; padding: 6px 10px; }
+.dr-fig b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+.dr-fig span { font-size: 10px; color: var(--fg3); text-transform: uppercase; letter-spacing: .04em; }
+.dr-sec { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--fg3); margin: 12px 0 4px; }
+.dr-body svg { width: 100%; display: block; overflow: visible; }
+.dr-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.dr-actions button, .dr-actions a { font-size: 12px; padding: 5px 11px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); text-decoration: none; color: var(--fg); cursor: pointer; transition: background var(--t), transform .12s var(--ease); }
+.dr-actions button.primary { background: var(--accent1); border-color: var(--accent1); color: #fff; }
+.dr-actions button:hover, .dr-actions a:hover { background: var(--bg3); }
+.dr-actions button.primary:hover { background: #2f5a2b; }
+
+/* ── HELP PANEL ── */
+#help { position: fixed; inset: 0; z-index: 900; background: rgba(30,24,14,.5); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .25s ease; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.help-card { position: relative; width: 640px; max-width: 100%; max-height: 100%; overflow-y: auto; background: var(--bg); border-radius: 14px; padding: 22px 26px 22px; box-shadow: var(--shadow-l); animation: fadeUp .35s var(--ease); }
+#help-close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--bg3); font-size: 18px; cursor: pointer; }
+.help-card h2 { font-size: 20px; margin-bottom: 8px; }
+.help-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--fg3); margin: 16px 0 6px; }
+.help-lead { font-size: 14px; line-height: 1.5; }
+.help-cols { display: grid; grid-template-columns: 1fr 1.2fr; gap: 0 24px; }
+.help-card ul, .help-card ol { padding-left: 18px; font-size: 13px; line-height: 1.55; }
+.help-card .help-small { font-size: 11.5px; color: var(--fg2); line-height: 1.5; }
+#help-starters { display: flex; flex-wrap: wrap; gap: 8px; }
+#help-starters button { padding: 7px 12px; border-radius: 18px; border: 1px solid var(--accent1); background: var(--bg); color: var(--accent1); font-size: 12.5px; cursor: pointer; transition: background .2s ease, color .2s ease; }
+#help-starters button:hover { background: var(--accent1); color: #fff; }
+.help-card .primary { margin-top: 18px; padding: 8px 22px; border-radius: 8px; border: 0; background: var(--accent1); color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.help-card .primary:hover { background: #2f5a2b; }
+
+/* ── LOADING OVERLAY ── */
+#loading-overlay { position: fixed; inset: 0; z-index: 1000; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity .6s ease, visibility .6s; }
+#loading-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loading-box { text-align: center; width: 340px; }
+.loading-box .logo-big { font-size: 56px; display: block; margin-bottom: 10px; animation: bob 2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+.loading-box p { color: var(--fg2); margin: 10px 0 14px; font-size: 14px; }
+.loading-box p.error { color: var(--red); font-size: 13px; line-height: 1.5; white-space: pre-line; }
+.spinner { width: 40px; height: 40px; border-radius: 50%; border: 4px solid var(--bg3); border-top-color: var(--accent1); animation: spin 1s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-bar-wrap { width: 100%; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+#loading-bar { height: 100%; background: var(--accent1); border-radius: 3px; transition: width .25s ease; width: 0%; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

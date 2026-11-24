@@ -4,7 +4,7 @@
   let drawerSpecies = -1;
 
   function initDrawer() { $('drawer-close').addEventListener('click', closeDrawer); }
-  function closeDrawer() { $('map-container').classList.remove('drawer-open'); $('drawer').setAttribute('aria-hidden', 'true'); drawerSpecies = -1; }
+  function closeDrawer() { $('map-container').classList.remove('drawer-open'); $('drawer').setAttribute('aria-hidden', 'true'); $('drawer').setAttribute('inert', ''); drawerSpecies = -1; }
 
   // all-time statistics of a species (engine pass), then the map-dependent parts (bounding box of its places)
   async function scanSpecies(idx) {
@@ -56,7 +56,7 @@
 
   function openSpecies(idx, fly) {
     drawerSpecies = idx;
-    $('map-container').classList.add('drawer-open'); $('drawer').setAttribute('aria-hidden', 'false');
+    $('map-container').classList.add('drawer-open'); $('drawer').setAttribute('aria-hidden', 'false'); $('drawer').removeAttribute('inert');
     getSpeciesInfo(idx).then((info) => {
       if (drawerSpecies !== idx) return;
       if (fly && info.bbox) flyToBox(info.bbox);          // fly to the 2nd-98th percentile box of its places, beside the drawer

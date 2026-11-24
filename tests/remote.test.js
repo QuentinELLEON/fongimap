@@ -7,11 +7,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
-const have = fs.existsSync(path.join(ROOT, 'data.js'));
+const have = fs.existsSync(path.join(ROOT, 'assets/data/data.js'));
 
 test('remote engine equals the local engine', { skip: !have && 'data.js not built', timeout: 120000 }, async () => {
   const { startEngine, createServer } = require('../tools/serve_remote.js');
-  const { core, engine, meta } = await startEngine(path.join(ROOT, 'data.js'));
+  const { core, engine, meta } = await startEngine(path.join(ROOT, 'assets/data/data.js'));
   const server = createServer(core, engine, 'fongibase');
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;

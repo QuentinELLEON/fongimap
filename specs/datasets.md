@@ -60,7 +60,7 @@ See §6 for the measured effect of the NC option.
 | `cd_ref` | **not available** (left empty; names are matched by Latin binomial) |
 | `trophic_mode`, `guild` | filled from FongiBase by species, else by genus (enrichment, may be wrong for new species) |
 | `date` | `eventDate` cut to `YYYY-MM-DD` |
-| `department` | `stateProvince` "(NN)" when present, else the commune polygon of the point (`pipeline/communes.py`) |
+| `department` | `stateProvince` "(NN)" when present, else the commune polygon of the point (`tools/pipeline/communes.py`) |
 | `locality` | `locality` |
 | `ecoregion` | modal value of the département in FongiBase |
 | `gps_latitude`, `gps_longitude` | `decimalLatitude`, `decimalLongitude` (metropolitan bounding box only) |
@@ -84,7 +84,7 @@ Allowing CC-BY-NC multiplies the usable macrofungi records by about **five**. Th
 
 ## 7. Refreshing ("dynamic")
 
-- **Now:** `python tools/import_gbif.py && python build.py --csv … --dataset-id gbif_fr_recent --chunks 3 --year-min 2022 --year-max <current year> …` (≈ 5 minutes for the strict slice). Output files: `data-gbif_fr_recent.js` + chunk files + `datasets.js` (git-ignored: they are build artefacts).
+- **Now:** `python tools/import_gbif.py && python tools/build_data.py --csv … --dataset-id gbif_fr_recent --chunks 3 --year-min 2022 --year-max <current year> …` (≈ 5 minutes for the strict slice). Output files (in `assets/data/`): `data-gbif_fr_recent.js` + chunk files + `datasets.js` (git-ignored: they are build artefacts).
 - **Automatable:** `.github/workflows/refresh-gbif.yml` (manual trigger, **untested on GitHub**) rebuilds and uploads the files as an artifact; scheduling and publishing (Pages / release) are one decision away.
 - **Citation:** the search API gives **no DOI**. For anything redistributed, run a GBIF *download* with the same filters (needs a GBIF account) and cite its DOI, as the GBIF data-user agreement asks; keep the per-dataset licence in the data (not done yet: the importer keeps only records whose licence is accepted and records nothing per row).
 - **Later (regime C):** the remote engine contract (`engine-remote.js`, `tools/serve_remote.js`) lets a server answer filters if the dataset ever outgrows the browser.

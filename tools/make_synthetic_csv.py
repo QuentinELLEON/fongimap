@@ -2,7 +2,7 @@
 """
 Generate a SYNTHETIC CSV with the same schema as the FongiBase extract.
 
-Purpose: test build.py and index.html end-to-end when the real 219 MB CSV is not
+Purpose: test tools/build_data.py and index.html end-to-end when the real 219 MB CSV is not
 available (and benchmark the 1M-row case).  The data is random - it must never be
 presented as real observations.
 

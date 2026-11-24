@@ -23,5 +23,6 @@ data_raw/a_com2025_topo.json
 data_raw/*.jsonl
 data_raw/wikidata_cache.json
 
-# development datasets (synthetic) and their chunks
-data-demo*.js
+# development datasets (synthetic) and their chunks (tools/make_synthetic_csv.py + tools/build_data.py --dataset-id demo)
+assets/data/data-demo*.js
+.claude/

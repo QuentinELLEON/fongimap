@@ -1,6 +1,6 @@
 # Vendored libraries
 
-Inlined into `index.html` by `assemble_html.py`; no network at runtime.
+Copied unchanged to `assets/js/vendor/` by `tools/build_web.py` (fflate is also embedded in the Web Worker text); no network at runtime.
 
 | File | Library | Version | Licence | SHA-256 |
 |---|---|---|---|---|

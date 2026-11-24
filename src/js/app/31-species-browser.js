@@ -94,8 +94,8 @@
     const sel = d3.select(list).selectAll('div.sp-row').data(rows, (d) => d.idx).join(
       (en) => {
         const r = en.append('div').attr('class', 'sp-row').attr('role', 'button').attr('tabindex', 0);
-        r.append('span').attr('class', 'sp-badge').append('i');
-        const m = r.append('span').attr('class', 'sp-main'); m.append('em').attr('class', 'sp-name'); m.append('small').attr('class', 'sp-fam');
+        r.append('span').attr('class', 'sp-badge').attr('aria-hidden', 'true').append('i');
+        const m = r.append('span').attr('class', 'sp-main'); m.append('em').attr('class', 'sp-name'); m.append('small').attr('class', 'sp-fam'); m.append('span').attr('class', 'sr-only sp-edi');
         r.append('b').attr('class', 'sp-n');
         r.on('click', (e, d) => pickSpecies(d.idx))
           .on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickSpecies(d.idx); } })
@@ -106,8 +106,9 @@
       (ex) => ex.filter(':not(.leaving)').classed('leaving', true).style('pointer-events', 'none').transition('x').duration(DUR / 2).style('opacity', 0).remove());
     sel.style('top', (d) => d.rank * ROW_H + 'px')
       .classed('sel', (d) => state.speciesSet.has(d.idx)).attr('aria-pressed', (d) => state.speciesSet.has(d.idx))
-      .attr('title', (d) => d.name + (d.fr ? ' (' + d.latin + ')' : '') + ' — ' + EDI[d.edi].label).attr('aria-label', (d) => d.name + (d.fr ? ', ' + d.latin : '') + ', ' + fmt(d.n) + ' observations, ' + EDI[d.edi].label);
+      .attr('title', (d) => d.name + (d.fr ? ' (' + d.latin + ')' : '') + ' — ' + EDI[d.edi].label);
     sel.select('.sp-badge').style('background', (d) => EDI[d.edi].colour).style('color', (d) => EDI[d.edi].ink).select('i').text((d) => EDI[d.edi].icon);
+    sel.select('.sp-edi').text((d) => ' — ' + EDI[d.edi].label);
     sel.select('.sp-name').classed('latin', (d) => !d.fr).text((d) => d.name);
     sel.select('.sp-fam').html((d) => (d.fr ? '<i>' + esc(d.latin) + '</i>' : '') + (d.fr && d.fam ? ' · ' : '') + esc(d.fam) + (d.hint ? ' · ' + esc(d.hint) : ''));
     sel.select('.sp-n').each(function (d) { tweenNumber(this, d.n); });

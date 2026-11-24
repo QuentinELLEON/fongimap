@@ -20,20 +20,20 @@
     const row = (swatch, label) => '<li>' + swatch + '<span>' + label + '</span></li>';
     let html;
     if (kind === 'dept') {
-      html = '<h5>' + esc(legend.title) + '</h5><ul>' + legend.ramp.map((c, i) => row('<i class="sw" style="background:' + c + '"></i>', legend.labels[i])).join('') +
+      html = '<p class="lg-title" role="heading" aria-level="2">' + esc(legend.title) + '</p><ul>' + legend.ramp.map((c, i) => row('<i class="sw" style="background:' + c + '"></i>', legend.labels[i])).join('') +
         row('<i class="sw" style="background:' + COL_ZERO + '"></i>', 'aucune observation') + '</ul>' +
         '<p class="legend-note">' + esc(legend.note) + (hint ? ' Zoomez : des hexagones puis des lieux apparaissent.' : '') + '</p>';
     } else if (kind === 'commune') {
       const byCount = metric === 'count';
-      html = '<h5>' + (byCount ? 'Observations par commune' : 'Observations par km²') + '</h5><ul>' +
+      html = '<p class="lg-title" role="heading" aria-level="2">' + (byCount ? 'Observations par commune' : 'Observations par km²') + '</p><ul>' +
         communeRamp.map((c, i) => row('<i class="sw" style="background:' + c + '"></i>', communeLabels[i])).join('') +
         row('<i class="sw" style="background:' + COL_ZERO + '"></i>', 'aucune observation') + '</ul>' +
         '<p class="legend-note">Chaque commune est colorée selon son nombre d’observations' + (byCount ? '' : ' rapporté à sa surface') + '. Les lieux au centre de la commune n’ont pas de position plus fine : la commune est l’échelle fiable. Traits : commune &lt; département &lt; région.</p>';
     } else if (kind === 'grid') {
-      html = '<h5>Observations par hexagone</h5><p class="legend-note top">Chaque hexagone mesure 10 km de large (≈ 87 km²) : plus il est foncé, plus il y a eu d’observations.</p><ul>' +
+      html = '<p class="lg-title" role="heading" aria-level="2">Observations par hexagone</p><p class="legend-note top">Chaque hexagone mesure 10 km de large (≈ 87 km²) : plus il est foncé, plus il y a eu d’observations.</p><ul>' +
         CELL_LABELS.map((l, i) => row('<i class="sw" style="background:' + cellColour(i) + '"></i>', l)).join('') + '</ul>';
     } else {
-      html = '<h5>Observations par lieu</h5><ul class="circles">' +
+      html = '<p class="lg-title" role="heading" aria-level="2">Observations par lieu</p><ul class="circles">' +
         SYM_RADII.map((rr, i) => row('<i class="circ" style="width:' + Math.round(2 * rr) + 'px;height:' + Math.round(2 * rr) + 'px"></i>', SYM_LABELS[i])).join('') + '</ul>' +
         '<ul class="kinds">' + row('<i class="circ exact"></i>', 'position GPS') +
         (showApprox ? row('<i class="circ approx"></i>', 'centre de commune (approximatif)') : '') +
@@ -96,35 +96,63 @@
   function animStep(now) {
     const t = Math.min(1, (now - animStart) / DUR), e = EASE(t);
     for (let k = 0; k < nSites; k++) siteShown[k] = siteFrom[k] + (siteTarget[k] - siteFrom[k]) * e;
-    drawLayers();
+    if (!moving) drawLayers();
     animRaf = t < 1 ? requestAnimationFrame(animStep) : 0;
   }
 
   let drawQueued = false;
   function requestDraw() {
-    if (drawQueued) return;
+    if (drawQueued || moving) return;                  // during a gesture the settle step redraws everything once
     drawQueued = true;
-    requestAnimationFrame(() => { drawQueued = false; drawLayers(); });
+    requestAnimationFrame(() => { drawQueued = false; if (!moving) drawLayers(); });
   }
+
+  // ── motion: while the user pans or zooms, the canvases keep their last bitmap and the compositor moves it (CSS
+  //    transform, no JavaScript per frame). The costly redraw happens once the gesture pauses, or at most every
+  //    few hundred ms during a long gesture or fly-to, so panning stays smooth at every zoom level. ─────────
+  const SETTLE_MS = 140, CANVAS_IDS = ['grid-canvas', 'commune-canvas', 'ign-canvas', 'dot-canvas', 'label-canvas'];
+  let moving = false, settleTimer = 0, drawnTf = { x: 0, y: 0, k: 1 }, lastDrawAt = 0, lastDrawMs = 0, canvasEls = null;
+  function resetCanvasTransform() {
+    if (!canvasEls) canvasEls = CANVAS_IDS.map($);
+    canvasEls.forEach((c) => { c.style.transform = ''; });
+    canvasEls[4].style.visibility = '';
+  }
+  function onMotion() {
+    if (!siteShown) return;
+    if (!moving) lastDrawAt = performance.now();          // a gesture never starts with a full redraw
+    moving = true;
+    clearTimeout(settleTimer); settleTimer = setTimeout(settle, SETTLE_MS);
+    if (!canvasEls) canvasEls = CANVAS_IDS.map($);
+    if (performance.now() - lastDrawAt > Math.max(450, lastDrawMs * 6)) { drawLayers(true); return; }   // long gesture: refresh the bitmap now and then
+    const s = tf.k / drawnTf.k, css = 'translate(' + (tf.x - s * drawnTf.x).toFixed(2) + 'px,' + (tf.y - s * drawnTf.y).toFixed(2) + 'px) scale(' + s.toFixed(5) + ')';
+    canvasEls.forEach((c) => { c.style.transform = css; });
+    canvasEls[4].style.visibility = s > 1.5 || s < 0.67 ? 'hidden' : '';      // stretched text is unreadable: hide it until the redraw
+  }
+  function settle() { moving = false; clearTimeout(settleTimer); drawLayers(); }
 
   const cellColour = (i) => d3.interpolateYlOrBr(0.16 + 0.72 * i / 4);
 
   // draw dept fade, grid cells, sites, place names, scale bar and locator for the current zoom / mode
-  function drawLayers() {
+  function drawLayers(interim) {
     if (!siteShown) return;
+    const t0 = performance.now();
+    drawnTf = { x: tf.x, y: tf.y, k: tf.k };
+    resetCanvasTransform();
     const al = layerAlphas();
     deptG.style('opacity', 1 - 0.7 * Math.max(al.gridA, al.communeA, al.dotA));     // the choropleth recedes once finer layers take over
+    regionG.style('display', al.communeA > 0.99 ? 'none' : null);                   // the commune canvas draws the region borders itself: no SVG strokes to repaint
     const gridVis = al.gridA * (1 - al.communeA) * (1 - al.dotA);
     $('grid-canvas').style.opacity = gridVis.toFixed(3);
     $('commune-canvas').style.opacity = al.communeA.toFixed(3);
     $('dot-canvas').style.opacity = al.dotA.toFixed(3);
     if (gridVis > 0.01) drawGrid();
     if (al.communeA > 0.01) drawCommunes(al); else if (visCommunes.length) { visCommunes = []; $('commune-canvas').getContext('2d').clearRect(0, 0, base.w, base.h); }
-    drawIgn();
+    drawIgn(interim);
     if (al.dotA > 0.01) drawSites(); else clusters = [];
     renderLegend(al);
     updateScale(); updateLocator();
     layoutLabels(al); paintLabels();
+    lastDrawAt = performance.now(); lastDrawMs = lastDrawAt - t0; perf.draw = lastDrawMs;
   }
 
   // amber graduated symbols; places closer than CLUSTER_PX on screen are grouped (cluster, don't remove)

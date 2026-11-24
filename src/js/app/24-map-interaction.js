@@ -28,6 +28,7 @@
   }
   // click on the map: a town label or a single place filters on its commune, a group of places zooms in
   function onMapClick(e) {
+    if (NEAR.placing) { placeAt(e); return true; }        // "Autour de moi": the next click chooses the point
     const box = $('map-container').getBoundingClientRect(), mx = e.clientX - box.left, my = e.clientY - box.top;
     const lc = labelAt(mx, my);
     if (lc >= 0) { pickCommune(lc); return true; }
@@ -64,6 +65,7 @@
 
   // ── tooltips (département, place / group of places, or grid cell) ─────────
   function onMapMove(e) {
+    if (moving) return;                                  // hit-test data describes the last redraw, not the bitmap being moved
     const box = $('map-container').getBoundingClientRect();
     const mx = e.clientX - box.left, my = e.clientY - box.top;
     const al = layerAlphas();

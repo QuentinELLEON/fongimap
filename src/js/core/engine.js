@@ -19,7 +19,23 @@
 
   const REC = 18, SP_MISSING = 0xFFFE, MISSING = 0xFF, COORD_MISSING = 0xFFFF, RARE_N = 100;
   const F = { SPECIES: 1, PHYLUM: 2, GUILD: 4, TROPHIC: 8, ECO: 16, YEAR: 32, MONTH: 64, DEPT: 128, EDIBLE: 256, COMMUNE: 512 };
+  const FORMAT_VERSION = 1;                      // layout above; tools/build_data.py writes the same number in META.format.version
+  core.FORMAT_VERSION = FORMAT_VERSION;
   core.F = F; core.REC = REC; core.SP_MISSING = SP_MISSING; core.MISSING = MISSING; core.RARE_N = RARE_N;
+
+  // CRC-32 (IEEE) of a byte array, to check a record blob against META.format.crc32 / chunks[i].crc32
+  let CRC_TABLE = null;
+  core.crc32 = function (bytes) {
+    if (!CRC_TABLE) { CRC_TABLE = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC_TABLE[n] = c >>> 0; } }
+    let c = 0xFFFFFFFF; for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  };
+  // a dataset announces its layout in META.format; datasets built before the header existed have none and are read as version 1
+  function checkFormat(fmt) {
+    if (!fmt) return;
+    if (fmt.version !== FORMAT_VERSION || fmt.record_bytes !== REC) throw new Error('Format de données non pris en charge (version ' + fmt.version + ', ' + fmt.record_bytes + ' octets par observation) : reconstruisez le jeu avec tools/build_data.py.');
+  }
+  const verifyCrc = (raw, crc, what) => { if (crc !== undefined && crc !== null && core.crc32(raw) !== crc) throw new Error('Somme de contrôle invalide (' + what + ') : fichier de données corrompu ou incomplet.'); };
 
   const tableFromList = (list, size) => { const t = new Uint8Array(size); for (let i = 0; i < list.length; i++) t[list[i]] = 1; return t; };
 
@@ -70,6 +86,7 @@
 
       // payload: { b64 | packed | raw, N, sites:{lon,lat,approx,cell,commune}, edible: codes string|null, drawnDepts: [dept idx], nSpecies }
       async init(p, progress) {
+        checkFormat(p.format);
         N = p.N; S = p.sites || { lon: [], lat: [], approx: [], cell: [], commune: [] }; nSites = S.lon.length;
         nSpeciesDict = p.nSpecies;
         let raw = p.raw;
@@ -81,6 +98,7 @@
           raw = root.fflate.unzlibSync(packed);
         }
         if (raw.length !== N * REC) throw new Error('Taille des données inattendue (' + raw.length + ' ≠ ' + N * REC + ').');
+        if (p.verify) verifyCrc(raw, p.crc32, 'jeu de données');
         await step('Indexation de ' + N.toLocaleString('fr-FR') + ' observations…', 50, progress);
         c = splitColumns(raw, N); raw = null;
         failMask = new Uint16Array(N);
@@ -102,6 +120,7 @@
       async append(p) {
         const raw = p.raw || root.fflate.unzlibSync(p.packed || decodeBase64(p.b64));
         if (raw.length % REC !== 0) throw new Error('Morceau de données invalide.');
+        if (p.verify) verifyCrc(raw, p.crc32, 'morceau');
         const n = raw.length / REC, add = splitColumns(raw, n), N0 = N;
         const merged = {};
         Object.keys(c).forEach((k) => { merged[k] = new c[k].constructor(N0 + n); merged[k].set(c[k]); merged[k].set(add[k], N0); });
@@ -219,6 +238,27 @@
         const all = [...spc.entries()].filter((e) => e[0] !== SP_MISSING);
         let gB = -1, gM = 0; for (let g = 0; g < 255; g++) if (gc[g] > gM) { gM = gc[g]; gB = g; }
         return { top: all.sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, n), distinct: all.length, guild: gB };
+      },
+
+      // What grows around a point, for a season (issue #14). The caller lists the sites inside its radius; the engine counts the
+      // records of those sites, per species and per site, independently of the interface filters.
+      //   q = { sites: number[] | Int32Array, weights: Float32Array(13) (weight of month 1..12, index 0 unused), edible: 0 | 1 | 2, species: -1 | idx }
+      //   -> { season (weighted, per species), all (all months, per species), siteSeason, siteAll (per site; restricted to q.species when given), total, totalSeason }
+      nearby(q) {
+        const inSet = tableFromList(q.sites, nSites), w = q.weights, ed = ediOf, mode = q.edible || 0, one = q.species === undefined ? -1 : q.species;
+        const season = new Float32Array(65536), all = new Uint32Array(65536), siteSeason = new Float32Array(nSites), siteAll = new Uint32Array(nSites);
+        const species = c.species, month = c.month; let total = 0, totalSeason = 0;
+        for (let i = 0; i < N; i++) {
+          const s = siteOf[i];
+          if (s < 0 || inSet[s] === 0) continue;
+          const sp = species[i];
+          if (sp >= SP_MISSING) continue;
+          if (mode === 1) { if (ed[sp] !== 1 && ed[sp] !== 2) continue; } else if (mode === 2) { if (ed[sp] !== 4 && ed[sp] !== 5) continue; }
+          const wm = w[month[i]] || 0;
+          all[sp]++; total++; season[sp] += wm; totalSeason += wm;
+          if (one < 0 || one === sp) { siteAll[s]++; siteSeason[s] += wm; }
+        }
+        return { season, all, siteSeason, siteAll, total, totalSeason };
       },
 
       // all-time statistics of one species (independent of the filters)

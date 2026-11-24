@@ -8,11 +8,11 @@ compact embedded data file read by index.html.
 
 Usage
 -----
-  python build.py                       # CSV auto-detected in data_raw/
-  python build.py --csv path/to.csv     # explicit CSV
-  python build.py --sample 10000        # first 10 000 rows only (fast dev loop)
-  python build.py --inspect             # print schema / statistics, write nothing
-  python build.py --out some/dir        # where data.js is written (default: this folder)
+  python tools/build_data.py                       # CSV auto-detected in data_raw/
+  python tools/build_data.py --csv path/to.csv     # explicit CSV
+  python tools/build_data.py --sample 10000        # first 10 000 rows only (fast dev loop)
+  python tools/build_data.py --inspect             # print schema / statistics, write nothing
+  python tools/build_data.py --out some/dir        # where data.js is written (default: this folder)
 
 Requirements: Python 3.9+, pandas, numpy.
 
@@ -67,7 +67,7 @@ from pipeline import communes as communes_geo
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-ROOT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = Path(__file__).resolve().parent.parent        # repository root (this script lives in tools/)
 LAT_MIN, LAT_MAX = 41.0, 51.5
 LON_MIN, LON_MAX = -5.5, 10.0
 Q_MAX = 65534            # highest valid quantised value
@@ -75,6 +75,7 @@ COORD_MISSING = 0xFFFF
 SPECIES_MISSING = 0xFFFE
 U8_MISSING = 0xFF
 RECORD_SIZE = 18
+FORMAT_VERSION = 1       # version of the binary record layout below; bump it (and src/js/core/engine.js) together with any change of DTYPE
 MAX_DATAJS_MB = 12.0     # NFR-03.2
 
 DTYPE = np.dtype([
@@ -94,6 +95,16 @@ DTYPE = np.dtype([
     ("corine",    "u1"),
 ])
 assert DTYPE.itemsize == RECORD_SIZE
+
+
+def format_header(crc=None):
+    """Self-description of the record blob, stored in META.format: the engine refuses a layout it does not know.
+    crc = CRC-32 of the uncompressed records (embedded datasets; chunked datasets carry one per chunk)."""
+    h = {"name": "fongimap-records", "version": FORMAT_VERSION, "record_bytes": RECORD_SIZE,
+         "fields": [[n, DTYPE[n].str.lstrip("<|")] for n in DTYPE.names], "checksum": "crc32 of the uncompressed records"}
+    if crc is not None:
+        h["crc32"] = crc
+    return h
 
 # logical name -> CSV header (compared case-insensitively, spaces == underscores)
 WANTED = {
@@ -130,7 +141,7 @@ def norm_header(name):
 # ---------------------------------------------------------------------------
 def find_csv(arg):
     """Locate the source CSV or exit with a helpful message (NFR-05.6)."""
-    here = Path(__file__).resolve().parent
+    here = ROOT_DIR
     if arg:
         p = Path(arg)
         if not p.is_file():
@@ -195,7 +206,7 @@ def clean_text(series):
 
 def geojson_dept_codes():
     """Département codes of the basemap (used to guarantee they all get a dictionary slot)."""
-    p = Path(__file__).resolve().parent / "data_processed" / "departements.geojson"
+    p = ROOT_DIR / "data_processed" / "departements.geojson"
     try:
         gj = json.loads(p.read_text(encoding="utf-8-sig"))
         return [f["properties"]["code"] for f in gj["features"]]
@@ -203,7 +214,7 @@ def geojson_dept_codes():
         return []
 
 
-EDIBILITY_CSV = Path(__file__).resolve().parent / "data_processed" / "edibility.csv"
+EDIBILITY_CSV = ROOT_DIR / "data_processed" / "edibility.csv"
 
 
 def load_edibility(species):
@@ -317,12 +328,12 @@ def hex_of(e, n):
 SNAP_M = 3000    # positions this close to the basemap (simplified coastline) are pulled back onto land
 COMMUNE_NAME_KM = 12.0   # a site is assigned to the commune named like its locality when that centre is this close
 PLACE_MIN_POP = 5000   # communes at least this populous become map labels (toponyms)
-POP_JSON = Path(__file__).resolve().parent / "data_raw" / "communes_population.json"
+POP_JSON = ROOT_DIR / "data_raw" / "communes_population.json"
 
 
 def land_rings():
     """Projected (Lambert-93, metres) rings of the 96 département polygons: [(is_hole, x, y), ...]."""
-    p = Path(__file__).resolve().parent / "data_processed" / "departements.geojson"
+    p = ROOT_DIR / "data_processed" / "departements.geojson"
     gj = json.loads(p.read_text(encoding="utf-8-sig"))
     rings = []
     for f in gj["features"]:
@@ -438,8 +449,8 @@ def build_places(path_centres, path_pop):
             "lat": [round(r[3], 3) for r in rows], "pop": [r[0] for r in rows], "code": [r[4] for r in rows]}
 
 
-COMMUNES_JSON = Path(__file__).resolve().parent / "data_raw" / "communes.json"
-COMMUNE_TOPO = Path(__file__).resolve().parent / "data_raw" / "a_com2025_topo.json"
+COMMUNES_JSON = ROOT_DIR / "data_raw" / "communes.json"
+COMMUNE_TOPO = ROOT_DIR / "data_raw" / "a_com2025_topo.json"
 COMMUNE_SIMPLIFY_M = 100.0     # Douglas-Peucker tolerance of the commune geometry shipped to the browser (metres)
 
 
@@ -680,8 +691,8 @@ def main():
 
     ap = argparse.ArgumentParser(description="FongiMap ETL: CSV -> data.js")
     ap.add_argument("--csv", default=None, help="path to the source CSV")
-    ap.add_argument("--out", default=str(Path(__file__).resolve().parent),
-                    help="output directory for data.js (default: script folder)")
+    ap.add_argument("--out", default=str(ROOT_DIR / "assets" / "data"),
+                    help="output directory for the dataset scripts (default: assets/data/)")
     ap.add_argument("--sample", type=int, default=0, help="only read the first N rows")
     ap.add_argument("--inspect", action="store_true", help="print statistics and exit")
     ap.add_argument("--communes", default=str(COMMUNES_JSON),
@@ -784,6 +795,7 @@ def main():
     # Record order carries no meaning: sort by (dept, species) so that equal bytes sit
     # together and zlib compresses ~25 % better (stable sort -> deterministic output).
     chunks_meta, chunk_files = [], []
+    crc_all = None
     if args.chunks > 1:
         # append-only chunks by period (oldest first); every chunk is sorted by (dept, species) for compression
         arr = arr[np.argsort(arr["year"], kind="stable")]
@@ -793,13 +805,15 @@ def main():
             comp_c = zlib.compress(part.tobytes(), 9)
             yrs = part["year"][part["year"] > 0]
             fname_c = "data-%s.%04d.js" % (args.dataset_id, ci + 1)
-            chunks_meta.append({"file": fname_c, "n": int(len(part)), "year0": int(yrs.min()) if len(yrs) else 0, "year1": int(yrs.max()) if len(yrs) else 0})
+            chunks_meta.append({"file": fname_c, "n": int(len(part)), "year0": int(yrs.min()) if len(yrs) else 0, "year1": int(yrs.max()) if len(yrs) else 0,
+                                "crc32": zlib.crc32(part.tobytes())})
             chunk_files.append((fname_c, base64.b64encode(comp_c).decode("ascii"), int(len(part))))
         b64 = ""
         log("Chunks: %d files, %s MB base64 in total" % (args.chunks, "%.2f" % (sum(len(c[1]) for c in chunk_files) / 1e6)))
     else:
         arr = arr[np.lexsort((arr["species"], arr["dept"]))]
         raw = arr.tobytes()
+        crc_all = zlib.crc32(raw)
         log("Packed: {:.2f} MB ({} bytes/record)".format(len(raw) / 1e6, RECORD_SIZE))
         comp = zlib.compress(raw, 9)
         b64 = base64.b64encode(comp).decode("ascii")
@@ -860,6 +874,7 @@ def main():
     meta = {
         "n_records": int(n),
         "record_size": RECORD_SIZE,
+        "format": format_header(crc_all),
         "lat_min": LAT_MIN, "lat_max": LAT_MAX,
         "lon_min": LON_MIN, "lon_max": LON_MAX,
         "dicts": {
@@ -887,7 +902,7 @@ def main():
     out = out_dir / fname
     default_credit = "FongiBase dataset - (c) Gautier et al. 2022, licence CC-BY 4.0"
     with open(out, "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Auto-generated by build.py - do not edit manually\n")
+        f.write("// Auto-generated by tools/build_data.py - do not edit manually\n")
         f.write("// %s\n" % (args.credit or (default_credit if args.dataset_id == "fongibase" else "dataset " + args.dataset_id)))
         f.write("// Source: %s\n\n" % (args.source or "https://zenodo.org/records/17158524"))
         f.write("window.FMAP_META = %s;\n\n" % meta_json)
@@ -900,7 +915,7 @@ def main():
     if geo_pkg:
         gout = out_dir / "geo-communes.js"
         with open(gout, "w", encoding="utf-8", newline="\n") as f:
-            f.write("// Auto-generated by build.py - do not edit manually\n")
+            f.write("// Auto-generated by tools/build_data.py - do not edit manually\n")
             f.write("// Commune boundaries: IGN ADMIN-EXPRESS COG PLUS 2025, Licence Ouverte (simplified)\n\n")
             f.write("window.FMAP_GEO_COMMUNES = %s;\n" % json.dumps(geo_pkg, separators=(",", ":")))
         log("Wrote %s  (%.2f MB)" % (gout, gout.stat().st_size / 1e6))
@@ -908,7 +923,7 @@ def main():
     log("\nWrote %s  (%.2f MB, %.1fs total)" % (out, size_mb, time.time() - t0))
     if size_mb > MAX_DATAJS_MB:
         log("WARNING: data.js exceeds the %.0f MB target." % MAX_DATAJS_MB)
-    log("Next: python assemble_html.py   (then open index.html next to data.js)")
+    log("Next: python tools/build_web.py   (then open index.html; the datasets are in assets/data/)")
 
 
 def update_registry(out_dir, args, fname, n, chunks_meta):
@@ -939,7 +954,7 @@ def update_registry(out_dir, args, fname, n, chunks_meta):
     entries = [e for e in entries if e.get("id") != entry["id"]] + [entry]
     entries.sort(key=lambda e: (e["id"] != "fongibase", e["id"]))
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Auto-generated by build.py - the datasets offered by index.html\n")
+        f.write("// Auto-generated by tools/build_data.py - the datasets offered by index.html\n")
         f.write("window.FMAP_DATASETS = %s;\n" % json.dumps(entries, ensure_ascii=False, indent=1))
 
 

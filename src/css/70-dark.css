@@ -1,0 +1,20 @@
+/* ── dark theme: interface dark, map area keeps the light "paper" tokens (all data colours stay validated) ── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e1b16; --bg2: #26231c; --bg3: #322e25; --border: #4a4435;
+  --fg: #efe9dc; --fg2: #cdc5b2; --fg3: #b0a68e; --link: #8fcf8c; --muted: #6b6451;
+  --shadow: 0 2px 8px rgba(0,0,0,.5); --shadow-l: 0 8px 28px rgba(0,0,0,.6);
+}
+:root[data-theme="dark"] #topbar { background: #2a4a27; }
+:root[data-theme="dark"] #map-container, :root[data-theme="dark"] #map-container * {
+  --bg: #f7f4ee; --bg2: #eeebe1; --bg3: #e4e0d4; --border: #cdc9bc;
+  --fg: #2b2217; --fg2: #5a4e3a; --fg3: #675b47; --link: #3a6b35; color-scheme: light;
+}
+:root[data-theme="dark"] #filter-bar { background: var(--bg2); }
+:root[data-theme="dark"] .fchip { background: color-mix(in srgb, var(--accent1) 25%, var(--bg)); border-color: #5d9a56; }
+:root[data-theme="dark"] .fchip i { background: #5d9a56; }
+:root[data-theme="dark"] .chip.active, :root[data-theme="dark"] .month-btn.active, :root[data-theme="dark"] .seg button.on { background: #3a6b35; color: #fff; }
+:root[data-theme="dark"] #side-tabs button.on { color: #8fcf8c; border-bottom-color: #8fcf8c; }
+:root[data-theme="dark"] .help-card { background: var(--bg); color: var(--fg); }
+:root[data-theme="dark"] .sp-row.sel { background: #2b3a28; }
+:root[data-theme="dark"] #map-container { color: var(--fg); }       /* text inherited by the drawer, tooltips and legend must follow the light tokens of the map area */

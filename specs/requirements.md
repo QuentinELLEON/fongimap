@@ -6,7 +6,7 @@ Replaces v1.0 (kept in `history/requirements-v1.md`). These requirements describ
 
 | ID | Requirement | Check |
 |---|---|---|
-| FR-1 Data | The page loads one dataset at a time from classic `<script>` files next to `index.html` (`data.js`, or `data-<id>.js` chosen by `?ds=<id>`); a registry `datasets.js` feeds the dataset selector. Datasets may be split into period chunks loaded newest first and appended in the background. | `tests/chunks.test.js`; manual (`?ds=…`) |
+| FR-1 Data | The page loads one dataset at a time from classic `<script>` files in `assets/data/` next to `index.html` (`assets/data/data.js`, or `data-<id>.js` chosen by `?ds=<id>`); a registry `datasets.js` feeds the dataset selector. Datasets may be split into period chunks loaded newest first and appended in the background. | `tests/chunks.test.js`; manual (`?ds=…`) |
 | FR-2 Map levels | Semantic zoom: départements → 10 km hexagons → communes (polygons, coloured) → graduated places; borders have a hierarchy (commune < département < région < coast); names appear as they fit. | manual |
 | FR-2b IGN overlays | At the last zoom levels two **independent, switchable** online layers are drawn over the colour code: forest delimitation (IGN forest mask 2021-2023) and altitude (contour lines every 20 or 50 m with bold labelled lines every 5th, summits and passes with their altitude, computed from IGN RGE ALTI). Defaults: both on; the choice is remembered and shared in the URL (`fo=0`, `al=0`). | `tests/contour.test.js`; manual |
 | FR-3 Colour measures | Départements: observations per 100 km² (default), total, distinct species, rarefied richness; communes: density or total; classes by quantiles with rounded, published breaks; one legend for the dominant layer. | manual |
@@ -25,12 +25,16 @@ Replaces v1.0 (kept in `history/requirements-v1.md`). These requirements describ
 |---|---|---|
 | NFR-1 Offline | (Exception: the optional IGN overlays, FR-2b, which need a connection and are absent otherwise.) Opens by double-click from `file://`, no network at runtime (no CDN, fonts, tiles, icons). Classic scripts only (no ES modules, no `fetch` of local files); `localStorage` always in `try/catch`. | architecture.md §6 |
 | NFR-2 Performance | Filtering and aggregation ≤ 50 ms for 1 M records and ≤ 100 ms for 5 M, off the main thread (Web Worker; main-thread fallback). A full layer redraw with the commune layer visible ≤ 10 ms. | `specs/performance.md` |
-| NFR-3 Size | `index.html` ≈ 0.9 MB; `data.js` 9.4 MB (limit 12 MB); commune geometry 2.2 MB loaded lazily. | build log |
+| NFR-3 Size | `index.html` ≈ 19 KB + `assets/css`+`assets/js` ≈ 1 MB (budget 1.6 MB, checked by `tools/build_web.py`); `data.js` 9.4 MB (limit 12 MB); commune geometry 2.2 MB loaded lazily. | build log |
 | NFR-4 Browsers | Chrome / Edge / Firefox current. Safari and Firefox are untested here; the Worker may be unavailable on `file://` (automatic fallback). | not verified |
-| NFR-5 Build | `python build.py && python assemble_html.py` with Python 3.9+, pandas, numpy only; raw inputs fetched by `tools/fetch_raw.py` with SHA-256 verification; geometry work in `pipeline/` (numpy only); outputs deterministic. | build log |
+| NFR-5 Build | `python tools/build_data.py && python tools/build_web.py` with Python 3.9+, pandas, numpy only; raw inputs fetched by `tools/fetch_raw.py` with SHA-256 verification; geometry work in `tools/pipeline/` (numpy only); outputs deterministic. | build log |
 | NFR-6 Quality | `node --test "tests/*.test.js"` (engine golden master, search, URL state, chunk loading, remote engine) must pass; counters of the real data must not change unexplained (anchors in `CLAUDE.md`). | CI |
 | NFR-7 Accessibility | Interactive elements are focusable buttons; the map is keyboard-operable; result counts are announced; text contrast ≥ 4.5:1 on the light theme; targets ≥ 24 px where practical. | manual (axe-core not run) |
-| NFR-8 Privacy | No tracking, no network call; imported datasets never store observer names. | review |
+| NFR-8 Privacy | No tracking; no network call except the two declared, optional ones (ADR-10 IGN overlays at the last zoom levels; ADR-11 weather indication on a click, position rounded to 1 km); a user's position is never stored or put in the shareable link; imported datasets never store observer names. | review |
+| FR-N Around me | Given a point (geolocation or map click), a date and a radius, the panel lists the species and the places with the most observations around that time of year within the radius, optionally restricted to edible / toxic; the position is never stored, sent or put in the link; an optional online weather indication needs a click and sends the position rounded to 1 km (ADR-11). | `tests/nearby.test.js`; manual: `specs/context.md` §13 |
+| FR-S Side panel | The left panel can be hidden and shown again (button, edge handle, `[`, Ctrl/Cmd-B); the choice is remembered; the map keeps its view. | manual; axe-core |
+| NFR-P Interaction | Panning and zooming never block on a full redraw: canvases are moved by the compositor and redrawn when the gesture pauses; the forest overlay at the deepest zoom costs about 65 ms per redraw instead of 650 ms per frame. | `specs/performance.md` §Interaction |
+| NFR-A11y | axe-core: 0 serious / critical violations on the home, filters, around-me, species sheet, side-panel-hidden, help and dark-theme screens. | `node tools/check_a11y.js` |
 
 ## 3. Out of scope (today)
 

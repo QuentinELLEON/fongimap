@@ -1,6 +1,6 @@
 # FongiMap — Performance measurements
 
-Measured on 21 November 2026 on the development laptop (Windows 10, Node 26 / V8; page figures from the in-app Chromium pane). Reproduce: `node tools/bench_engine.js` (needs a built `data.js`). These are **single-machine, single-run-family** numbers: use them for orders of magnitude and for before/after comparisons, not as guarantees.
+Measured on 21 November 2026 on the development laptop (Windows 10, Node 26 / V8; page figures from the in-app Chromium pane). Reproduce: `node tools/bench_engine.js` (needs a built `assets/data/data.js`). These are **single-machine, single-run-family** numbers: use them for orders of magnitude and for before/after comparisons, not as guarantees.
 
 ## Core engine (Node, real records, tiled to emulate larger datasets)
 
@@ -63,3 +63,16 @@ Because the records are already sorted, interleaving costs nothing in compressio
 | Summits / passes (WFS `detail_orographique`) | 48 kB for 73 features (Alps tile) | used |
 
 At k = 66 over the Jura or the Oisans (24–30 tiles in view) all layers are ready in about 15–25 s on this connection; a full redraw of every layer takes ≈ 6 ms once loaded.
+
+## Interaction at deep zoom (24 November 2026, issue #12)
+
+Measured in the Chromium pane (software raster, 584×316 px canvases, so absolute values are pessimistic; the ratios are what matters). A redraw is timed as the JavaScript time plus a forced raster (`getImageData`) of every canvas.
+
+| View (Jura, 46.6 N 5.9 E) | before | after |
+|---|---|---|
+| k = 70, forest overlay on | 650 ms **per frame** while moving | one redraw of ≈ 65–90 ms after the gesture; 0 ms per frame during it |
+| k = 70, forest off | 13 ms | 13 ms |
+| k = 12 (communes), k = 6 | 33 / 54 ms per frame | 20 / 48 ms, once per gesture |
+
+Causes found: (1) stroking the forest polygons costs ≈ 500 ms at k = 70 because every vertex, mostly off screen, goes through the stroker (a 0.5 px hairline is 15× cheaper: the cost is the stroker, not the fill); (2) the same forest was stored once per tile it touches, so it was drawn and filled several times; (3) every zoom event redrew all layers and re-enqueued IGN requests. Fixes: screen-space paths clipped to the viewport with 1 px simplification (58 k → 33 k vertices on the test view), features shared by id, motion mode (canvases moved by the compositor, redraw when the gesture pauses), IGN requests only when settled and aborted when the tile leaves the view, region strokes hidden when the commune canvas draws them, `layoutMap` skipped when the size did not change.
+Not measurable here: SVG département repaint at deep zoom (the pane throttles `requestAnimationFrame` to ≈ 1.6 fps, so no frame time can be read); the first draw after a pause is the number to watch on slower machines (`FMAP_APP.perf.draw`).

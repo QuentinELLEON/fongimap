@@ -138,7 +138,7 @@
     });
     ctx.globalAlpha = 1;
     // legend
-    const lg = $('map-legend'), title = lg.querySelector('h5'), lis = Array.from(lg.querySelectorAll('li'));
+    const lg = $('map-legend'), title = lg.querySelector('.lg-title'), lis = Array.from(lg.querySelectorAll('li'));
     if (title && lis.length) {
       const lh = 18 * S, w = 232 * S, h = (30 + lis.length * 18) * S, x = 12 * S, y = (H - 12) * S - h - 24 * S;
       ctx.fillStyle = 'rgba(247,244,238,.95)'; ctx.strokeStyle = '#cdc9bc'; ctx.lineWidth = S; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
