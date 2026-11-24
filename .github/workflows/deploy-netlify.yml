@@ -1,0 +1,61 @@
+# Publishes the static site to the Netlify site "fongimap" whenever something lands on main (a merged pull request or a push).
+#
+# One-time setup (GitHub: Settings > Secrets and variables > Actions): add the secret NETLIFY_AUTH_TOKEN (your Netlify personal
+# access token), as a repository secret or as a secret of the "production" environment. Never commit a token.
+# Optional repository variable NETLIFY_SITE: site name or ID, defaults to "fongimap".
+#
+# What is published: index.html + assets/ only (the application and its datasets). Sources, tools, tests, specs and raw data
+# stay out of the site. Nothing is built here: the committed assets are checked to match src/ (see ci.yml), then uploaded.
+name: deploy-netlify
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: netlify-production
+  cancel-in-progress: false           # two merges in a row deploy one after the other; a running deploy always finishes
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4     # Git LFS files (the 219 MB raw CSV) are not fetched
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: The committed assets are up to date with src/
+        run: |
+          python tools/build_web.py --out "$RUNNER_TEMP/fresh" > /dev/null
+          for f in css/app.css js/app.js js/core.js js/worker-source.js js/geo-france.js; do
+            diff -q "$RUNNER_TEMP/fresh/assets/$f" "assets/$f" || { echo "assets/$f is stale: run python tools/build_web.py and commit"; exit 1; }
+          done
+      - name: Node tests
+        run: node --test "tests/*.test.js"
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://fongimap.netlify.app
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE: ${{ vars.NETLIFY_SITE || 'fongimap' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the token is configured
+        run: test -n "$NETLIFY_AUTH_TOKEN" || { echo "::error::Secret NETLIFY_AUTH_TOKEN is not set (Settings > Secrets and variables > Actions)"; exit 1; }
+      - name: Stage index.html + assets/
+        run: |
+          mkdir public && cp -r index.html assets public/
+          test -f public/assets/data/data.js && test -f public/assets/js/app.js     # refuse to publish an incomplete site
+          du -sh public
+      - name: Deploy to Netlify (production)
+        run: npx --yes netlify-cli@latest deploy --prod --dir=public --site="$NETLIFY_SITE" --message="GitHub ${GITHUB_SHA::7} ${GITHUB_REF_NAME}"
