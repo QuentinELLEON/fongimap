@@ -131,8 +131,8 @@
           </div></div>
         </section>
         <footer id="credits">
-          Données : <a href="https://zenodo.org/records/17158524" target="_blank" rel="noopener">FongiBase</a>,
-          Gautier et al. 2022 — DOI&nbsp;10.5281/zenodo.17158524 — CC-BY&nbsp;4.0.<br>
+          Jeux de données : <a href="https://zenodo.org/records/17158524" target="_blank" rel="noopener">FongiBase</a>,
+          Gautier et al. 2022 — DOI&nbsp;10.5281/zenodo.17158524 — CC-BY&nbsp;4.0 ; GBIF.org, CC0 / CC-BY&nbsp;4.0 (selon le jeu choisi).<br>
           Forêts, courbes de niveau et altitudes (couches en ligne) : IGN Géoplateforme, Licence Ouverte.<br>
           Fond de carte : gregoiredavid/france-geojson. Noms et populations des communes : geo.api.gouv.fr.<br>
           <span id="ds-credit"></span><br>
@@ -213,7 +213,7 @@
     <div class="help-card">
       <button id="help-close" type="button" title="Fermer (Échap)">×</button>
       <h2 id="help-title">🍄 À quoi sert FongiMap ?</h2>
-      <p class="help-lead">FongiMap montre <b>où et quand des champignons ont été observés en France</b>, espèce par espèce, à partir d’un million d’observations de naturalistes (base FongiBase).</p>
+      <p class="help-lead">FongiMap montre <b>où et quand des champignons ont été observés en France</b>, espèce par espèce, à partir d’observations de naturalistes (bases FongiBase et GBIF).</p>
       <div class="help-cols">
         <div>
           <h3>Ce que vous pouvez y trouver</h3>
@@ -262,12 +262,12 @@
 
 <!-- Scripts. Everything is a classic script (no ES modules, no fetch of local files) so that a double-click on this file works (file://).
      assets/data/*.js  datasets: built by tools/build_data.py            assets/js/*.js  application: built from src/ by tools/build_web.py -->
-<script>window.FMAP_DATA_DIR = 'assets/data/';</script>
+<script>window.FMAP_DATA_DIR = 'assets/data/'; window.FMAP_DS_DEFAULT = 'gbif_precise';   /* dataset shown when the address has no ?ds=<id> */</script>
 <script src="assets/data/datasets.js" onerror="window.FMAP_DATASETS=null"></script>
 <script>
-/* which dataset? ?ds=<id> picks the entry of that id in the registry datasets.js (default: fongibase -> data.js) */
+/* which dataset? ?ds=<id> picks the entry of that id in the registry datasets.js (default: FMAP_DS_DEFAULT) */
 (function () {
-  var m = /[?&]ds=([\w-]+)/.exec(location.search), id = m ? m[1] : 'fongibase';
+  var m = /[?&]ds=([\w-]+)/.exec(location.search), id = m ? m[1] : window.FMAP_DS_DEFAULT;
   window.FMAP_DS_ID = id;
   var d = (window.FMAP_DATASETS || []).filter(function (e) { return e.id === id; })[0];
   var file = d ? d.file : (id === 'fongibase' ? 'data.js' : 'data-' + id + '.js');

@@ -46,6 +46,7 @@
   // ── constants ─────────────────────────────────────────────────────────────
   const REC = 18;
   const VERIFY = /[?&]verify=1\b/.test(location.search);     // ?verify=1 checks the CRC-32 of the data (about 50 ms more at start)
+  const DEFAULT_DS = window.FMAP_DS_DEFAULT || 'fongibase';   // dataset opened without ?ds=<id> (set by index.html)
   const DATA_DIR = window.FMAP_DATA_DIR || '';      // folder of the dataset scripts, relative to index.html (set by index.html)
   const SP_MISSING = 0xFFFE, MISSING = 0xFF, COORD_MISSING = 0xFFFF, Q_MAX = 65534;
   let YEAR_LO = 1900, YEAR_HI = 2021;      // period slider range: set from META.year_range at boot

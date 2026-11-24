@@ -97,3 +97,17 @@ Allowing CC-BY-NC multiplies the usable macrofungi records by about **five**. Th
 4. Should near-duplicates against FongiBase be removed before extending the period back to 2016–2021?
 5. Is a dedicated **ADONIF / SMF / INPN** export possible? (It would beat any aggregator for macrofungi quality.)
 6. Photos from iNaturalist would enrich the species drawer: acceptable licence-wise (per photo) and worth a separate integration?
+
+## 9. Third dataset: "GBIF — positions précises (≤ 100 m)" (24 November 2026)
+
+**Why.** FongiBase has a GPS point for only 43 % of its records and the centre of the commune for 33 %. Measured on the GBIF API on 24 November 2026 (macrofungi: Agaricomycetes, Pezizomycetes, Dacrymycetes, Tremellomycetes; human observations; CC0 + CC-BY): positions declared accurate to ≤ 100 m number 4 986 since 2022, 12 047 for 2010-2021 and 28 235 over all years (≤ 1 km: 6 607 / 19 060 / 41 915; ≤ 30 m: 4 245 / 6 449 / 11 400); allowing CC-BY-NC would add about 30 000 / 18 000 / 32 000 at ≤ 100 m.
+**Choice.** Not the 2022-only slice (it is a subset of `gbif_fr_recent`), and not CC-BY-NC (open licence decision, §8 question 1): **1990 → today, CC0 + CC-BY, coordinate uncertainty ≤ 100 m, lichens excluded.** It is a separate, selectable dataset (the selector reloads the page), so its overlap with FongiBase for 2010-2021 does not double count anything.
+**Result.** 26 813 occurrences, 2 602 species (646 with a French name), 96 départements, 2.6 MB (`assets/data/data-gbif_precise.js`, embedded, no chunks); checksum verified (`?ds=gbif_precise&verify=1`), loads on `file://` in Chrome (`CHECK_QUERY="?ds=gbif_precise" node tools/check_file_url.js`).
+**Rebuild.**
+```
+python tools/import_gbif.py --from-year 1990 --max-uncertainty 100 --out test_data/gbif_precise.csv      # ≈ 15 min (monthly API slices)
+python tools/build_data.py --csv test_data/gbif_precise.csv --dataset-id gbif_precise --year-min 1990 --year-max <year> --title "GBIF — champignons de France, positions précises (≤ 100 m)" --credit "…" --licence "CC0 / CC-BY 4.0" --updated <date>
+git checkout assets/data/geo-communes.js     # the build rewrites it identically except for its header comment
+```
+**Default.** Since 24 November 2026 this is the dataset opened without `?ds=` (`window.FMAP_DS_DEFAULT` in `index.html`); FongiBase stays one click away (`?ds=fongibase`, header selector) and keeps the regression anchors of `CLAUDE.md`. Exports (PNG, CSV) carry the credit line of the dataset in use. A thinner default (26 813 against 1 043 262 observations) trades coverage for position quality: 99 % of its records are located, none only at a commune centre.
+**Limits.** Uncertainty is declared by the publisher (often phone GPS accuracy) and records without a value are excluded; sensitive species are blurred by publishers and therefore absent; GBIF names are not TAXREF (2 027 of 2 602 species have a `cd_ref`); no GBIF download DOI yet (§7), so cite GBIF.org with the access date until one is made.

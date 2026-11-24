@@ -107,7 +107,8 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
   const stamp = () => new Date().toISOString().slice(0, 10);
-  const SOURCE_LINE = 'FongiBase, Gautier et al. 2022, CC-BY 4.0 (doi:10.5281/zenodo.17158524)';
+  // attribution line of the dataset in use (exports always carry it)
+  const sourceLine = () => { const d = currentDataset(); return (d && d.credit) || 'FongiBase, Gautier et al. 2022, CC-BY 4.0 (doi:10.5281/zenodo.17158524)'; };
 
   // species of the current view as CSV (UTF-8 with BOM for spreadsheets); the source is repeated on every row
   function exportCSV() {
@@ -116,7 +117,7 @@
     const idx = [];
     for (let s = 0; s < DICT.species.length; s++) if (lastAgg.bySpecies[s] > 0) idx.push(s);
     idx.sort((p, r) => lastAgg.bySpecies[r] - lastAgg.bySpecies[p] || p - r);
-    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], (META.cdref && META.cdref[s]) || '', spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, SOURCE_LINE]));
+    idx.forEach((s) => rows.push([hasFr(s) ? frOf.get(s)[0] : '', DICT.species[s], (META.cdref && META.cdref[s]) || '', spFamily[s] !== MISSING ? DICT.family[spFamily[s]] : '', lastAgg.bySpecies[s], EDI[ediOf[s]].label, sourceLine()]));
     download(new Blob(['\uFEFF' + rows.map((r) => r.map(q).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'fongimap-especes-' + stamp() + '.csv');
   }
 
@@ -154,7 +155,7 @@
     const filters = activeFilters().map((f) => f.label).join(' · ');
     ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(0, (H - 22) * S, W * S, 22 * S);
     ctx.fillStyle = '#2b2217'; ctx.font = (10 * S) + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    ctx.fillText('FongiMap · ' + SOURCE_LINE + ' · limites IGN / Etalab' + (ignVisible() ? ' · forêts et altitudes : IGN (Licence Ouverte)' : '') + ' · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
+    ctx.fillText('FongiMap · ' + sourceLine() + ' · limites IGN / Etalab' + (ignVisible() ? ' · forêts et altitudes : IGN (Licence Ouverte)' : '') + ' · comestibilité indicative' + (filters ? ' · ' + filters : '') + ' · ' + stamp(), 8 * S, (H - 11) * S, (W - 16) * S);
     return new Promise((resolve) => out.toBlob((b) => { download(b, 'fongimap-' + stamp() + '.png'); resolve(b); }, 'image/png'));
   }
 
@@ -186,13 +187,13 @@
   }
 
   // ── datasets ─────────────────────────────────────────────────────────────
-  const currentDataset = () => (window.FMAP_DATASETS || []).filter((e) => e.id === (window.FMAP_DS_ID || 'fongibase'))[0] || null;
+  const currentDataset = () => (window.FMAP_DATASETS || []).filter((e) => e.id === (window.FMAP_DS_ID || DEFAULT_DS))[0] || null;
   function initDatasets() {
     const list = window.FMAP_DATASETS || [], cur = currentDataset(), sel = $('sel-dataset');
     if (list.length > 1) {
       sel.innerHTML = list.map((e) => '<option value="' + esc(e.id) + '"' + (cur && cur.id === e.id ? ' selected' : '') + '>' + esc(e.title) + (e.synthetic ? ' (synthétique)' : '') + '</option>').join('');
       sel.classList.remove('hidden');
-      sel.addEventListener('change', () => { location.href = location.pathname + (sel.value === 'fongibase' ? '' : '?ds=' + encodeURIComponent(sel.value)) + location.hash; });   // a full reload: dictionaries and places differ per dataset
+      sel.addEventListener('change', () => { location.href = location.pathname + (sel.value === DEFAULT_DS ? '' : '?ds=' + encodeURIComponent(sel.value)) + location.hash; });   // a full reload: dictionaries and places differ per dataset
     }
     if (cur && cur.synthetic) $('ds-banner').classList.remove('hidden');
     if (cur && cur.id !== 'fongibase') {
