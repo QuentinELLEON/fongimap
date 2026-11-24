@@ -11,23 +11,20 @@
     $('loading-spinner').style.display = 'none';
     $('loading-bar-wrap').style.display = 'none';
   }
-  // text of the worker: the inflate library + the core engine, read back from the page's own inline scripts
-  function workerSource() {
-    const a = document.getElementById('fmap-fflate'), b = document.getElementById('fmap-core');
-    return a && b ? a.textContent + '\n' + b.textContent : '';
-  }
+  // text of the worker: the inflate library + the core engine (assets/js/worker-source.js: a script file cannot read back its own text)
+  const workerSource = () => (typeof window.FMAP_WORKER_SRC === 'string' ? window.FMAP_WORKER_SRC : '');
 
   // ── datasets delivered in chunks (append-only, by period): newest first, older ones in the background ─────────
   const noteStats = (st) => { spFamily = st.spFamily; dataStats = st; META.yearSpan = st.ymax ? st.ymin + '–' + st.ymax : ''; };
   function chunkScript(file) {
     return new Promise((resolve, reject) => {
-      const s = document.createElement('script'); s.src = file;
+      const s = document.createElement('script'); s.src = DATA_DIR + file;
       s.onload = () => { const c = window.FMAP_CHUNKS && window.FMAP_CHUNKS[file]; s.remove(); if (c) { delete window.FMAP_CHUNKS[file]; resolve(c); } else reject(new Error('Morceau vide : ' + file)); };
       s.onerror = () => reject(new Error('Morceau introuvable : ' + file));
       document.head.appendChild(s);
     });
   }
-  async function loadChunk(i) { const c = await chunkScript(META.chunks[i].file); return engine.append({ b64: c.data }); }
+  async function loadChunk(i) { const c = await chunkScript(META.chunks[i].file); return engine.append({ b64: c.data, crc32: META.chunks[i].crc32, verify: VERIFY }); }
   async function loadRemainingChunks() {
     const total = META.chunks.length, el = $('chunk-progress');
     try {
@@ -46,7 +43,7 @@
       setLoading('Lecture des données…', 5);
       await tick();
       if (!window.FMAP_META || typeof window.FMAP_DATA !== 'string') {
-        throw new Error('Fichier data.js introuvable ou invalide.\nExécutez build.py puis placez data.js dans le même dossier que index.html.');
+        throw new Error('Fichier data.js introuvable ou invalide.\nExécutez tools/build_data.py : il écrit assets/data/data.js à côté de index.html.');
       }
       META = window.FMAP_META; DICT = META.dicts; N = META.n_records;
       DEPTS = window.FMAP_DEPTS; REGIONS = window.FMAP_REGIONS;
@@ -67,6 +64,7 @@
       const S = META.sites || { lon: [], lat: [], approx: [], cell: [], commune: [] };
       let st = await engine.init({
         b64: window.FMAP_DATA, N: META.chunks ? 0 : N, nSpecies: DICT.species.length,
+        format: META.format, crc32: META.format && META.format.crc32, verify: VERIFY,
         sites: { lon: S.lon, lat: S.lat, approx: S.approx || [], cell: S.cell || [], commune: S.commune || [] },
         edible: META.edible ? META.edible.codes : null, drawnDepts: Array.from(deptFeat.keys()),
       }, setLoading);
@@ -84,6 +82,8 @@
       initDrawer();
       initHelp();
       initUI();
+      initPanelToggle();
+      initNearby();
       initIgn();
       initTheme();
 

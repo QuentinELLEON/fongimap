@@ -125,6 +125,7 @@
       }
     }
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    drawMe(ctx);
     if (!hover) return;
     ctx.lineWidth = 2.4; ctx.strokeStyle = '#111';
     if (hover.type === 'site' || hover.type === 'cluster') { ctx.beginPath(); ctx.arc(hover.x, hover.y, hover.r + 2.5, 0, 6.2832); ctx.stroke(); }

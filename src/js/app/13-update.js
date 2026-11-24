@@ -48,6 +48,7 @@
     renderBrowser(agg);
     syncUI();
     liveAnnounce(agg); scheduleHash();
+    if (NEAR.me && NEAR.species >= 0 && !state.speciesSet.has(NEAR.species)) { NEAR.species = -1; refreshNearby(); }   // the species chosen in "Autour de moi" was cleared elsewhere
     startSiteAnim(first);
     const t3 = performance.now();
     perf.filter = res.ms.filter; perf.aggregate = res.ms.aggregate; perf.render = t3 - t1; perf.total = t3 - t0;

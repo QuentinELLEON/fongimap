@@ -14,3 +14,5 @@
 | [`history/`](history/) | historical | The v1.0 requirements, design and task list (original intent). |
 
 Rule: when the code changes, update `context.md` (what/why) and, if the structure or a decision changes, `architecture.md`. Do not edit `history/` except for corrections of fact.
+
+Paths renamed on 24 November 2026 (ADR-12): `build.py` → `tools/build_data.py`, `assemble_html.py` → `tools/build_web.py`, `pipeline/` → `tools/pipeline/`, `build/` → `vendor/`, `data.js` / `datasets.js` / `geo-communes.js` / `data-*.js` → `assets/data/`, `src/style.css` → `src/css/*.css`, `src/index.template.html` → `index.html`. Older sections of `context.md`, the plans and `history/` keep the names of their time.

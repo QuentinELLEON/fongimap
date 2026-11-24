@@ -1,0 +1,20 @@
+/* ── sidebar toggle (issue #13): topbar button + edge handle, remembered between visits ── */
+.icon-btn { flex-shrink: 0; width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.5); border-radius: 8px; background: rgba(0,0,0,.2); color: #fff; cursor: pointer; transition: background var(--t); }
+.icon-btn:hover { background: rgba(0,0,0,.34); }
+.icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+#btn-side .pane { fill: currentColor; stroke: none; opacity: .85; transition: opacity .2s var(--ease-out); }
+#btn-side[aria-expanded="false"] .pane { opacity: 0; }
+#title-area { gap: 10px; }
+#main.side-collapsed #sidebar { display: none; }
+#main.side-opening #sidebar { animation: sideIn .22s var(--ease-out); }
+@keyframes sideIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+#side-rail {
+  position: absolute; top: 50%; left: var(--side-w); z-index: 8; width: 14px; height: 52px; margin-top: -26px; padding: 0;
+  display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-left: 0; border-radius: 0 8px 8px 0;
+  background: var(--bg); color: var(--fg2); cursor: pointer; box-shadow: var(--shadow); opacity: .72; transition: opacity .2s var(--ease-out), background var(--t);
+}
+#side-rail:hover, #side-rail:focus-visible { opacity: 1; background: var(--bg3); color: var(--fg); }
+#side-rail svg { width: 12px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease-out); }
+#main.side-collapsed #side-rail { left: 0; }
+#main.side-collapsed #side-rail svg { transform: scaleX(-1); }
+@media (max-width: 760px) { #side-rail { display: none; } #title-area { gap: 8px; } }

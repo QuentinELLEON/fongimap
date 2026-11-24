@@ -3,7 +3,7 @@
 Import French fungal occurrences from GBIF into a CSV with the FongiBase columns, ready for build.py:
 
     python tools/import_gbif.py --from-year 2022 --out test_data/gbif_fr.csv
-    python build.py --csv test_data/gbif_fr.csv --dataset-id gbif_fr_recent --chunks 5 \
+    python tools/build_data.py --csv test_data/gbif_fr.csv --dataset-id gbif_fr_recent --chunks 5 \
         --title "GBIF - champignons de France depuis 2022" --licence "CC0 / CC-BY 4.0" \
         --credit "GBIF.org occurrences (France, Fungi), CC0 / CC-BY 4.0" --source https://www.gbif.org --updated 2026-11-21
 
@@ -30,7 +30,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
 
 API = "https://api.gbif.org/v1/occurrence/search"
 HEADERS = {"User-Agent": "fongimap-data-import/1.0 (open-source mycology map)"}

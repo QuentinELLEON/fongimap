@@ -1,9 +1,9 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // Map: choropleth, zoom, layers, place names, tooltips
   // ═══════════════════════════════════════════════════════════════════════════
-  let projection, pathGen, zoom, mapSvg, gZoom, gBase, deptG, deptPaths, landClip, deptByArea = [];
+  let projection, pathGen, zoom, mapSvg, gZoom, gBase, deptG, regionG, deptPaths, landClip, deptByArea = [];
   let tf = d3.zoomIdentity;
-  const base = { s: 1, ox: 0, oy: 0, w: 0, h: 0 };
+  const base = { s: 1, ox: 0, oy: 0, w: 0, h: 0, dpr: 0 };
   const tipCache = new Map();
   let featCount = [], featVal = [], deptArea = [], deptCentroid = [], layerMode = 'auto', legendKey = '';
   let metric = 'density', showApprox = true, legend = { title: '', note: '', cuts: [], labels: [], ramp: [] };
@@ -41,14 +41,15 @@
         if (di >= 0) { toggleSet(state.deptSet, di); scheduleUpdate(); }
       })
       .on('dblclick', (e, d) => { e.preventDefault(); const b = pathGen.bounds(d); flyTo(b[0][0], b[0][1], b[1][0], b[1][1]); });
-    gBase.append('g').selectAll('path').data(REGIONS.features).join('path').attr('class', 'region-path').attr('d', pathGen);
+    regionG = gBase.append('g');
+    regionG.selectAll('path').data(REGIONS.features).join('path').attr('class', 'region-path').attr('d', pathGen);
     initPlaces();
 
     zoom = d3.zoom().scaleExtent([1, 80]).on('zoom', (e) => {
       tf = e.transform;
       gZoom.attr('transform', tf);
       hideTip();
-      requestDraw();
+      if (quietZoom) requestDraw(); else onMotion();
       scheduleHash();
     });
     mapSvg.call(zoom).on('dblclick.zoom', null);
@@ -85,8 +86,9 @@
   // fit the virtual 1000x1000 map box into the container; size canvases
   function layoutMap() {
     const box = $('map-container').getBoundingClientRect();
-    const w = Math.max(10, Math.round(box.width)), h = Math.max(10, Math.round(box.height));
-    base.w = w; base.h = h;
+    const w = Math.max(10, Math.round(box.width)), h = Math.max(10, Math.round(box.height)), dpr0 = window.devicePixelRatio || 1;
+    if (w === base.w && h === base.h && dpr0 === base.dpr) return;
+    base.w = w; base.h = h; base.dpr = dpr0;
     base.s = Math.min(w, h) / VIRT * 0.97;
     base.ox = (w - base.s * VIRT) / 2;
     base.oy = (h - base.s * VIRT) / 2;
@@ -99,6 +101,7 @@
       c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
     });
     labelKey = '';
+    resetCanvasTransform();
     requestDraw();
   }
 

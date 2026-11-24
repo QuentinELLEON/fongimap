@@ -9,14 +9,14 @@ const vm = require('node:vm');
 const zlib = require('node:zlib');
 
 const ROOT = path.join(__dirname, '..');
-const have = fs.existsSync(path.join(ROOT, 'data.js'));
+const have = fs.existsSync(path.join(ROOT, 'assets/data/data.js'));
 
 test('chunked loading equals one-shot loading', { skip: !have && 'data.js not built', timeout: 120000 }, async () => {
   const sandbox = { console, atob: (s) => Buffer.from(s, 'base64').toString('binary') }; sandbox.globalThis = sandbox; vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/js/core/engine.js'), 'utf8'), sandbox);
   const core = sandbox.FMAP_CORE;
   const sb = { window: {} }; vm.createContext(sb);
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'data.js'), 'utf8'), sb);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'assets/data/data.js'), 'utf8'), sb);
   const M = sb.window.FMAP_META, D = M.dicts, S = M.sites;
   const raw = new Uint8Array(zlib.inflateSync(Buffer.from(sb.window.FMAP_DATA, 'base64')));
   const N = M.n_records;

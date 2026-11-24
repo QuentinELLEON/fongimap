@@ -1,0 +1,32 @@
+/* ── commune search box (map corner) ── */
+#commune-box { position: absolute; top: 10px; left: 200px; z-index: 6; width: 230px; }
+#commune-search { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; box-shadow: var(--shadow); }
+#commune-results { list-style: none; margin-top: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-l); overflow: hidden; }
+#commune-results.hidden { display: none; }
+#commune-results li { padding: 6px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+#commune-results li span { color: var(--fg2); font-size: 11px; white-space: nowrap; }
+#commune-results li.on, #commune-results li:hover { background: var(--bg3); }
+#commune-results li.none { cursor: default; color: var(--fg2); }
+
+/* ── accessibility ── */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+button.chip, button.month-btn { font: inherit; color: inherit; text-align: center; }
+button.chip { font-size: 11px; }
+button.month-btn { font-size: 11px; }
+#map-svg:focus-visible { outline: 3px solid var(--accent3); outline-offset: -3px; }
+.sp-row:focus-visible, .chip:focus-visible, .month-btn:focus-visible, .fchip:focus-visible { outline: 2px solid var(--accent3); outline-offset: 1px; }
+.sp-badge { color: #1d160c; }
+#species-active, #commune-active { display: none !important; }       /* superseded by the filter bar above the map */
+#drawer-body > .dr-body:first-child { padding-top: 44px; }
+
+/* ── active filters bar ── */
+#filter-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 7px 12px; background: var(--bg); border-bottom: 1px solid var(--border); flex-shrink: 0; align-items: center; }
+#filter-bar.hidden { display: none; }
+.fchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 6px 3px 10px; border-radius: 14px; border: 1px solid var(--accent1); background: color-mix(in srgb, var(--accent1) 10%, var(--bg)); color: var(--fg); font: inherit; font-size: 12px; cursor: pointer; max-width: 100%; }
+.fchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.fchip i { font-style: normal; font-weight: 700; width: 18px; height: 18px; line-height: 17px; text-align: center; border-radius: 50%; background: var(--accent1); color: #fff; }
+.fchip:hover { background: color-mix(in srgb, var(--accent1) 22%, var(--bg)); }
+.fchip.clear { border-color: var(--border); background: transparent; padding: 3px 10px; color: var(--fg2); }
+.opt-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt-actions button { font: inherit; font-size: 12px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); cursor: pointer; }
+.opt-actions button:hover { border-color: var(--accent1); }

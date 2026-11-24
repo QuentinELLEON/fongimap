@@ -14,8 +14,14 @@ jobs:
         with:
           python-version: "3.11"
       - name: Python scripts compile
-        run: python -m compileall -q build.py assemble_html.py tools
-      - name: Assemble index.html
-        run: python assemble_html.py --out "$RUNNER_TEMP/dist" && ls -l "$RUNNER_TEMP/dist"
+        run: python -m compileall -q tools
+      - name: Build the browser assets (index.html + assets/)
+        run: python tools/build_web.py --out "$RUNNER_TEMP/dist" && find "$RUNNER_TEMP/dist" -type f | sort
+      - name: The committed assets are up to date with src/
+        run: |
+          python tools/build_web.py --out "$RUNNER_TEMP/fresh" > /dev/null
+          for f in css/app.css js/app.js js/core.js js/worker-source.js js/geo-france.js; do
+            diff -q "$RUNNER_TEMP/fresh/assets/$f" "assets/$f" || { echo "assets/$f is stale: run python tools/build_web.py and commit"; exit 1; }
+          done
       - name: Node tests (core engine golden master, search, geometry decoding)
         run: node --test "tests/*.test.js"

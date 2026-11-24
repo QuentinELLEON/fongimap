@@ -1,0 +1,82 @@
+/* ── CONTENT AREA ── */
+#content { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* ── MAP ── */
+#map-panel { flex: 1; min-height: 300px; position: relative; background: #dfe7eb; overflow: hidden; }
+#map-container { position: absolute; inset: 0; overflow: hidden; }
+#map-svg { width: 100%; height: 100%; display: block; cursor: grab; }
+#map-svg:active { cursor: grabbing; }
+#grid-canvas, #commune-canvas, #ign-canvas, #dot-canvas, #label-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s var(--ease); transform-origin: 0 0; will-change: transform; }
+#label-canvas { opacity: 1; transition: none; }
+
+.dept-layer { transition: opacity .6s var(--ease); }
+.dept-path { stroke: #fff; stroke-width: .5px; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .6s var(--ease), opacity .4s var(--ease), stroke .2s ease; }
+.dept-path:hover { stroke: #222; stroke-width: 1.2px; }
+.dept-path.selected { stroke: #1b3d18; stroke-width: 1.8px; }
+.dept-path.dim { opacity: .4; }
+.region-path { fill: none; stroke: rgba(0,0,0,.28); stroke-width: .9px; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+/* ── MAP OVERLAYS (options, legend, scale, locator) ── */
+#options-wrap { position: absolute; top: 10px; left: 10px; z-index: 6; }
+#btn-options {
+  font-size: 12px; background: rgba(247,244,238,.95); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; cursor: pointer; box-shadow: var(--shadow); color: var(--fg2);
+  transition: background var(--t);
+}
+#btn-options:hover, #btn-options.on { background: var(--bg3); }
+#options-pop {
+  margin-top: 6px; width: 296px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; box-shadow: var(--shadow-l);
+  display: flex; flex-direction: column; gap: 10px; font-size: 12px; animation: fadeUp .25s var(--ease);
+}
+.opt-row { display: flex; flex-direction: column; gap: 4px; color: var(--fg2); }
+.opt-row select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.opt-row.chk { flex-direction: row; align-items: flex-start; gap: 7px; cursor: pointer; line-height: 1.35; }
+.opt-row input { accent-color: var(--accent3); cursor: pointer; margin-top: 2px; }
+#preview-tag {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 5; background: rgba(43,34,23,.9); color: #fff; font-size: 12px;
+  padding: 5px 14px; border-radius: 16px; pointer-events: none; box-shadow: var(--shadow); animation: fadeUp .2s var(--ease);
+}
+#preview-tag em { font-style: italic; }
+
+#map-legend {
+  position: absolute; bottom: 12px; left: 12px; width: 232px;
+  background: rgba(247,244,238,.95); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 8px; font-size: 11.5px; box-shadow: var(--shadow);
+}
+#map-legend.swap { animation: fadeUp .35s var(--ease); }
+#map-legend .lg-title { font-size: 12px; margin-bottom: 6px; color: var(--fg); font-weight: 700; line-height: 1.25; }
+#map-legend ul { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+#map-legend li { display: flex; align-items: center; gap: 8px; color: var(--fg2); line-height: 1.2; min-height: 14px; }
+#map-legend .sw { flex-shrink: 0; width: 22px; height: 12px; border-radius: 2px; border: 1px solid rgba(0,0,0,.18); }
+#map-legend ul.circles { flex-direction: row; align-items: flex-end; flex-wrap: wrap; gap: 4px 12px; }
+#map-legend ul.circles li { flex-direction: column; gap: 2px; font-size: 10.5px; }
+#map-legend ul.kinds { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border); }
+#map-legend .circ { flex-shrink: 0; display: block; width: 12px; height: 12px; border-radius: 50%; background: rgba(214,134,26,.84); border: 1px solid #5c3406; }
+#map-legend .circ.approx { background: rgba(214,134,26,.28); border-color: rgba(150,88,12,.75); }
+#map-legend .circ.group { border-width: 2px; }
+#map-legend ul.circles .circ { width: auto; }
+.legend-note { margin-top: 6px; font-size: 10.5px; color: var(--fg3); line-height: 1.35; }
+.legend-note.top { margin: -2px 0 6px; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+#map-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5; transition: transform .45s var(--ease); }
+#map-container.drawer-open #map-controls, #map-container.drawer-open #map-corner { transform: translateX(-340px); }
+#map-corner { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; transition: transform .45s var(--ease); }
+#locator { width: 92px; height: 92px; background: rgba(247,244,238,.92); border: 1px solid var(--border); border-radius: 6px; padding: 3px; box-shadow: var(--shadow); cursor: pointer; pointer-events: auto; opacity: 0; transition: opacity .3s ease; }
+#locator.shown { opacity: 1; }
+#locator-map { fill: #cfd8c4; stroke: #7d8a74; stroke-width: 6; vector-effect: none; }
+#locator-rect { fill: rgba(196,123,43,.18); stroke: #c47b2b; stroke-width: 14; }
+#scale-bar { display: flex; flex-direction: column; align-items: flex-end; font-size: 10.5px; color: var(--fg); background: rgba(247,244,238,.85); border-radius: 5px; padding: 2px 6px 3px; }
+#scale-line { display: block; height: 5px; border: 2px solid var(--fg); border-top: 0; margin-top: 1px; }
+#map-controls button { width: 28px; height: 28px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); transition: background var(--t), transform .12s var(--ease); }
+#map-controls button:hover { background: var(--bg3); }
+#map-controls button:active { transform: scale(.92); }
+
+.tooltip {
+  position: absolute; pointer-events: none; z-index: 50; left: 0; top: 0; max-width: 270px;
+  background: rgba(43,34,23,.93); color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12px; line-height: 1.5;
+  transition: opacity .15s ease;
+}
+.tooltip.hidden { opacity: 0; visibility: hidden; }
+.tooltip strong { font-size: 13px; }
+.tooltip .muted { opacity: .7; }
+.tooltip em { font-style: italic; }
+.tooltip .dot { margin-right: 4px; }

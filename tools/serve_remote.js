@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Reference server for the remote-engine contract: wraps the SAME core engine behind
 //   POST /v1/datasets/{id}/{method}   {"args": [...]}   ->  JSON (typed arrays as base64)
-// Usage:  node tools/serve_remote.js [data.js] [port]     (listens on 127.0.0.1 only; development / contract tests)
+// Usage:  node tools/serve_remote.js [assets/data/data.js] [port]     (listens on 127.0.0.1 only; development / contract tests)
 // A production server would implement the same endpoints over a real store; the browser code does not change.
 'use strict';
 const fs = require('node:fs');
@@ -11,7 +11,7 @@ const vm = require('node:vm');
 const zlib = require('node:zlib');
 
 const ROOT = path.join(__dirname, '..');
-const METHODS = new Set(['filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'info']);
+const METHODS = new Set(['filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'nearby', 'info']);
 
 function loadCore() {
   const sb = { console, Buffer, atob: (s) => Buffer.from(s, 'base64').toString('binary') }; sb.globalThis = sb; vm.createContext(sb);
@@ -56,7 +56,7 @@ function createServer(core, engine, datasetId) {
 module.exports = { startEngine, createServer };
 
 if (require.main === module) {
-  const dataFile = path.resolve(process.argv[2] || path.join(ROOT, 'data.js')), port = +process.argv[3] || 8787;
+  const dataFile = path.resolve(process.argv[2] || path.join(ROOT, 'assets/data/data.js')), port = +process.argv[3] || 8787;
   startEngine(dataFile).then(({ core, engine }) => {
     createServer(core, engine, 'fongibase').listen(port, '127.0.0.1', () => console.log('remote engine on http://127.0.0.1:' + port + '/v1/datasets/fongibase/<method>'));
   });

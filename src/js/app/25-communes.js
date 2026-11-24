@@ -1,6 +1,6 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // Commune layer: polygons coloured by observations, hierarchical borders, names, hover, click, search
-  // Geometry comes from geo-communes.js (built by build.py, see pipeline/communes.py for the format). It is loaded and
+  // Geometry comes from geo-communes.js (built by tools/build_data.py, see tools/pipeline/communes.py for the format). It is loaded and
   // decoded lazily, never at boot: arcs are shared between communes so every border is drawn once, classed by the
   // administrative level it separates (commune / département / région / coast).
   // ═══════════════════════════════════════════════════════════════════════════
@@ -37,7 +37,7 @@
     if (G || geoState === 'loading' || geoState === 'failed' || !hasCommunes()) return;
     geoState = 'loading';
     if (window.FMAP_GEO_COMMUNES) { decodeGeometry(window.FMAP_GEO_COMMUNES); return; }
-    const s = document.createElement('script'); s.src = 'geo-communes.js';
+    const s = document.createElement('script'); s.src = DATA_DIR + 'geo-communes.js';
     s.onload = () => { if (window.FMAP_GEO_COMMUNES) decodeGeometry(window.FMAP_GEO_COMMUNES); else geoState = 'failed'; };
     s.onerror = () => { geoState = 'failed'; console.warn('FongiMap : geo-communes.js introuvable, pas de limites communales.'); };
     document.head.appendChild(s);

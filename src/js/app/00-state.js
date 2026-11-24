@@ -4,7 +4,7 @@
    Data: FongiBase extract, Gautier et al. 2022 – https://zenodo.org/records/17158524
 
    Binary record format (specs/design.md §2.2) – little-endian, 18 bytes/record,
-   produced by build.py, zlib-compressed + base64 in data.js (window.FMAP_DATA):
+   produced by tools/build_data.py, zlib-compressed + base64 in assets/data/data.js (window.FMAP_DATA):
 
      Offset  Bytes  Type    Field       Notes
      0       2      uint16  lon_q       quantised longitude, 0xFFFF = missing
@@ -24,7 +24,7 @@
 
    lon = lon_min + lon_q / 65534 * (lon_max - lon_min)   (same for lat)
 
-   Besides the records, data.js carries META.sites (the distinct GPS positions with their
+   Besides the records, the dataset script carries META.sites (the distinct GPS positions with their
    locality name) and META.edible (edibility code per species).  A record's site is found
    from its (lon_q, lat_q) pair.
 
@@ -45,6 +45,8 @@
 
   // ── constants ─────────────────────────────────────────────────────────────
   const REC = 18;
+  const VERIFY = /[?&]verify=1\b/.test(location.search);     // ?verify=1 checks the CRC-32 of the data (about 50 ms more at start)
+  const DATA_DIR = window.FMAP_DATA_DIR || '';      // folder of the dataset scripts, relative to index.html (set by index.html)
   const SP_MISSING = 0xFFFE, MISSING = 0xFF, COORD_MISSING = 0xFFFF, Q_MAX = 65534;
   let YEAR_LO = 1900, YEAR_HI = 2021;      // period slider range: set from META.year_range at boot
   const VIRT = 1000;                         // virtual map box the projection is fitted to
@@ -80,7 +82,7 @@
 
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Number(n).toLocaleString(LANG === 'en' ? 'en-GB' : 'fr-FR');
-    const tick = () => new Promise((r) => setTimeout(r, 15));
+  const tick = () => new Promise((r) => setTimeout(r, 15));
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -111,5 +113,5 @@
   let previewTok = 0, tipTok = 0, tipKey = '';   // stale-answer guards for asynchronous engine calls
   let previewing = false;                    // a species list row is hovered: the map shows its distribution
   let lastAgg = null;
-  const perf = { filter: 0, aggregate: 0, render: 0, total: 0 };
+  const perf = { filter: 0, aggregate: 0, render: 0, total: 0, draw: 0 };
 

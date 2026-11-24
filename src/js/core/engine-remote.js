@@ -39,7 +39,7 @@
       return JSON.parse(await r.text(), core.decodeTyped);
     };
     const client = { mode: 'remote', terminate() {} };
-    ['filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'info'].forEach((m) => { client[m] = (...args) => call(m, args); });
+    ['filter', 'preview', 'richness', 'topWhere', 'scanSpecies', 'nearby', 'info'].forEach((m) => { client[m] = (...args) => call(m, args); });
     client.init = () => call('info', []);        // the server already holds the records: init just reads its summary
     client.append = () => Promise.reject(new Error('append is not available on a remote dataset'));
     return client;

@@ -119,20 +119,23 @@ Dataset-local indices stay private to a package; the app always converts through
 
 Rationale and numbers to be produced by a spike (`plans/dynamic-dataset.md` §4.2): one buffer per column (SoA) instead of 18-byte interleaved rows ⇒ better compression, zero-copy views, no de-interleave loop; versioned header (`magic`, `format`, schema, rows, CRC32); dictionary index width chosen per column from real cardinality (fixes A4); `fflate` or native `DecompressionStream`.
 
-### 4.6 Repository layout (target)
+### 4.6 Repository layout
+
+**Implemented on 24 November 2026 (issue #10, ADR-12)**, in a smaller form than the original target (no esbuild, no `dist/`, no package split):
 
 ```
-src/{core,engine,data,view,styles}/  app.js  index.template.html
-pipeline/                 ingest · geocode · mask · grid · pack   (split of build.py)
-tools/                    prepare_communes.py · prepare_vernacular.py · fetch_raw.py · make_synthetic_csv.py
-data/raw/                 (ignored)  downloaded + SHA-256-checked
-data/reference/           small committed sources: geojson/topojson, edibility.csv, vernacular_fr.csv, SOURCES.md
-dist/{standalone,web}/    (ignored)  produced by build and CI
-tests/                    node unit · pytest · playwright · golden/
-specs/ , docs/            documentation (this folder)
-build/VENDOR.md           vendored libs: version, URL, SHA-256, licence
+index.html                hand-written entry page (≈ 19 KB): markup + <link>/<script src>; double-click it (file://)
+assets/css/app.css        built from src/css/*.css (ordered topical files)
+assets/js/                app.js (src/js/app/*.js in ONE function scope) · core.js (src/js/core) · worker-source.js · geo-france.js · vendor/{d3,fflate}
+assets/data/              datasets built by tools/build_data.py: data.js · datasets.js (registry) · geo-communes.js · data-<id>[.000n].js
+src/{css,js/core,js/app}  the sources of everything under assets/ except assets/data/
+vendor/                   d3.min.js, fflate.umd.js, VENDOR.md (versions, URL, licence)
+tools/                    build_data.py (CSV -> assets/data) · build_web.py (src -> assets) · pipeline/ · fetch_raw.py · import_gbif.py ·
+                          prepare_vernacular.py · make_synthetic_csv.py · check_file_url.js · check_a11y.js · bench_engine.js · serve_remote.js
+data_raw/ (ignored CSV)   downloaded + SHA-256-checked inputs         data_processed/   small committed inputs (GeoJSON, edibility, vernacular names)
+tests/   specs/   .github/
 ```
-Moves happen in steps (`plans/architecture-foundation.md` §5); nothing is relocated in the commit that introduced this document.
+`assets/` is generated and still committed (ADR-5 was not adopted, see §9); CI fails when it is stale with respect to `src/`.
 
 ### 4.7 Delivery
 
@@ -156,7 +159,7 @@ Moves happen in steps (`plans/architecture-foundation.md` §5); nothing is reloc
 | ADR-6 | **Assembly:** keep Python concatenation now; adopt `esbuild` (IIFE) when tree-shaking/worker bundling pays off | webpack/vite (heavier), ES modules (blocked on `file://`) | proposed |
 | ADR-7 | **Engine in a Worker with main-thread fallback** (same API) | main thread only; SharedArrayBuffer (needs cross-origin isolation, impossible on `file://`) | proposed — spike on `file://` per browser |
 | ADR-8 | **Server contract = bounded aggregates, not records** | stream raw rows | proposed |
-| ADR-9 | **`prepare_*` scripts run once, outputs committed** (geometry, vernacular names) so `build.py` stays pandas+numpy | add shapely to `build.py` | proposed |
+| ADR-9 | **`prepare_*` scripts run once, outputs committed** (geometry, vernacular names) so `tools/build_data.py` stays pandas+numpy | add shapely to `build.py` | proposed |
 
 ---
 
@@ -167,7 +170,7 @@ Moves happen in steps (`plans/architecture-foundation.md` §5); nothing is reloc
 | Classic `<script src>` | works | used today |
 | ES modules / `import` | blocked (CORS, opaque origin) | high |
 | `fetch()` of a local file | blocked in Chromium | high |
-| Worker from `Blob` URL | Chromium usually yes; **WebKit bug reports say it fails** | medium → **spike** |
+| Worker from `Blob` URL | **Chrome 157 and Edge 158: works on `file://`** (measured 24 Nov 2026 with `tools/check_file_url.js`: engine back-end `worker`, no error). Firefox and Safari not measured; the page falls back to the main-thread engine when the worker cannot start (WebKit bug reports say it can fail). | high for Chromium, medium elsewhere |
 | `SharedArrayBuffer` | no (needs cross-origin isolation) | high |
 | IndexedDB / `localStorage` | varies by browser/origin; always wrap in `try/catch` | medium |
 | WebAssembly from bytes | OK | medium |
@@ -209,10 +212,21 @@ Rough dependency graph: `foundation 2–6` → `dynamic-dataset`; all others ind
 | ADR-6 esbuild | **Not adopted**: no need appeared (concatenation + tests are enough; D3 tree-shaking would save ≈ 150 KB). |
 | ADR-7 engine in a Worker with fallback | **Implemented**; behaviour on `file://` per browser still to be verified. |
 | ADR-8 bounded aggregates over HTTP | **Implemented** as `engine-remote.js` + `tools/serve_remote.js`, tested against the local engine. |
-| ADR-9 prepare scripts with committed outputs | **Done for vernacular names**; commune geometry is built inside `build.py` through `pipeline/communes.py` (numpy only) from a checksum-verified raw input instead. |
+| ADR-9 prepare scripts with committed outputs | **Done for vernacular names**; commune geometry is built inside `tools/build_data.py` through `tools/pipeline/communes.py` (numpy only) from a checksum-verified raw input instead. |
 
-Repository layout: **not reorganised** (the documented commands and paths are unchanged); the target layout of §4.6 remains a direction, not a requirement. Findings A1 (stale specs), A2 (no seam between data, engine and view), A3 (data interface), A4 (unversioned format: still open), A8 (LFS leftovers), A12 (no tests: fixed), A13 (hard-coded strings: English via phrase translation, not extraction) and A14 (accessibility) were addressed to the degree described in `context.md` §9–11.
+Repository layout: reorganised on 24 November 2026 (§4.6, ADR-12). Findings A1 (stale specs), A2 (no seam between data, engine and view), A3 (data interface), A4 (unversioned format: fixed by the `META.format` header, ADR-12), A8 (LFS leftovers), A12 (no tests: fixed), A13 (hard-coded strings: English via phrase translation, not extraction) and A14 (accessibility) were addressed to the degree described in `context.md` §9–11.
 
 ### ADR-10 (21 November 2026): optional online overlays at the last zoom levels
 
 **Decision.** Forests and altitude are fetched from IGN's open Géoplateforme services at runtime, only at the last zoom levels (k ≥ ≈ 50), each behind its own switch, and are **not** embedded. **Why not embedded:** the finest open layers are far too large for a single-page offline deliverable (measured: the IGN contour-line layer is 30 MB for one 0.1° tile in the Jura and 124 MB in the Alps; BD TOPO vegetation 5.8 MB per tile; the forest mask 0.6–1.2 MB per tile before gzip, 115 kB gzipped per 0.05° tile). **How:** forest = WFS `IGNF_MASQUE-FORET.2021-2023:masque_foret`; altitude = elevations from the altimetry service (`ign_rge_alti_wld`, POST of up to 2 500 points) sampled on a 21 × 21 grid per 0.05° tile (≈ 200 m) with shared edge samples, contour lines by marching squares in the browser (`core/contour.js`), summits and passes from WFS `BDTOPO_V3:detail_orographique` with their altitude read from the grid. **Costs and limits:** every view sends the displayed area to data.geopf.fr (disclosed in the options and the help); the altimetry service answers HTTP 429 under load (requests are serialised and retried); contour resolution is that of the sampling (≈ 200 m), not the 5 m source DEM; without a connection the overlays are absent. **Alternatives rejected:** embedding a coarse raster (blocky at the last level), IGN WMTS raster tiles (Web Mercator tiles would need warping into the app's Lambert projection).
+
+### ADR-11 (24 November 2026): optional weather check in "Autour de moi"
+
+**Decision.** The "Autour de moi" panel (issue #14) may call **Open-Meteo** (`api.open-meteo.com/v1/forecast`, no key, CORS enabled) to read the last 14 days of hourly rain, humidity, temperature and soil moisture, and show a simple indication of how favourable the last days were. This is the **second declared exception** to "no network at runtime" (after ADR-10).
+**Why a network call.** Weather is not in the dataset and cannot be embedded (it changes hourly). **Guard rails.** (1) It never runs by itself: only when the user clicks "Vérifier l'humidité". (2) The only data sent is the position **rounded to 0.01° (≈ 1 km)**, in the URL; nothing is stored or put in the shareable link; the geolocation itself never leaves the page. (3) Offline or on failure the panel says so and everything else keeps working. (4) The verdict is a documented rule of thumb (`core/nearby.js`, `assessWeather`: rain over 14 and 3 days, air humidity, temperature, with frost / heat as a veto), labelled as indicative and not validated. (5) Only available for today's date.
+**Rejected.** Embedding a climatology (not "the last 3 days"); a paid or keyed API (a key cannot be kept secret in a static page); Météo-France open data (no CORS-friendly point API at the time of writing).
+
+### ADR-12 (24 November 2026): split deliverable, tools under `tools/`
+
+**Decision.** The standalone deliverable is no longer one 0.9 MB generated `index.html`: it is a hand-written `index.html` plus `assets/` (CSS, scripts, datasets), all classic scripts, so a double-click still works. Build scripts live in `tools/` (`build_data.py`, `build_web.py`, `pipeline/`), vendored libraries in `vendor/`, shipped datasets in `assets/data/`. **Consequences.** The Web Worker is started from a Blob whose text is delivered as a string (`assets/js/worker-source.js`), because a classic script cannot read back its own source; dataset paths are resolved against `window.FMAP_DATA_DIR`; the app and the engine are unchanged. **Checked** on `file://` in Chrome and Edge (`tools/check_file_url.js`), 23 Node tests, axe-core on 7 screens (`tools/check_a11y.js`).
+**Also in this change (from the #9 follow-ups):** the record format now carries a **versioned header** (`META.format`: name, version, record size, field list, CRC-32 of the records; per-chunk CRC-32 for chunked datasets). The engine refuses an unknown version; `?verify=1` checks the checksum at start; datasets built before the header existed still load (read as version 1).

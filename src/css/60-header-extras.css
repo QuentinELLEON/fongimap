@@ -1,0 +1,10 @@
+/* ── datasets ── */
+#sel-dataset { font: inherit; font-size: 12px; max-width: 190px; padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.5); background: rgba(0,0,0,.2); color: #fff; }
+#sel-dataset option { color: #2b2217; background: #fff; }
+#sel-dataset.hidden, #ds-banner.hidden, #chunk-progress.hidden { display: none; }
+#ds-banner { background: #7a1b12; color: #fff; padding: 5px 12px; font-size: 12px; text-align: center; flex-shrink: 0; }
+#chunk-progress { margin-left: 8px; font-size: 11.5px; opacity: .9; }
+
+/* ── language button ── */
+#btn-lang { height: 30px; min-width: 34px; padding: 0 8px; border-radius: 15px; border: 1px solid rgba(255,255,255,.5); background: rgba(0,0,0,.2); color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+#btn-lang:hover { background: rgba(0,0,0,.34); }

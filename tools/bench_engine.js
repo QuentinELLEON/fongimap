@@ -12,7 +12,7 @@ const sandbox = { console, atob: (s) => Buffer.from(s, 'base64').toString('binar
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/js/core/engine.js'), 'utf8'), sandbox);
 const core = sandbox.FMAP_CORE;
 const sb = { window: {} }; vm.createContext(sb);
-vm.runInContext(fs.readFileSync(path.join(ROOT, 'data.js'), 'utf8'), sb);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'assets/data/data.js'), 'utf8'), sb);
 const M = sb.window.FMAP_META, D = M.dicts;
 const t0 = process.hrtime.bigint();
 const raw1 = new Uint8Array(zlib.inflateSync(Buffer.from(sb.window.FMAP_DATA, 'base64')));

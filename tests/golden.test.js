@@ -10,7 +10,7 @@ const vm = require('node:vm');
 const zlib = require('node:zlib');
 
 const ROOT = path.join(__dirname, '..');
-const dataPath = path.join(ROOT, 'data.js');
+const dataPath = path.join(ROOT, 'assets/data/data.js');
 const have = fs.existsSync(dataPath);
 
 function loadCore() {
@@ -41,10 +41,13 @@ test('engine reproduces the golden counters', { skip: !have && 'data.js not buil
   const { FMAP_META: M, FMAP_DATA: b64 } = loadData();
   const D = M.dicts;
   const raw = new Uint8Array(zlib.inflateSync(Buffer.from(b64, 'base64')));
+  assert.strictEqual(M.format.version, core.FORMAT_VERSION, 'record format version');
+  assert.strictEqual(M.format.record_bytes, core.REC);
+  assert.strictEqual(core.crc32(raw), M.format.crc32, 'the records match the checksum written by build_data.py');
   const eng = core.createEngine();
   const S = M.sites;
   const stats = await eng.init({
-    raw, N: M.n_records, nSpecies: D.species.length,
+    raw, N: M.n_records, format: M.format, crc32: M.format.crc32, verify: true, nSpecies: D.species.length,
     sites: { lon: S.lon, lat: S.lat, approx: S.approx, cell: S.cell, commune: S.commune },
     edible: M.edible.codes, drawnDepts: drawnDepts(D.dept),
   });
